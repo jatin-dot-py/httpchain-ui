@@ -3,8 +3,8 @@ import { Button } from "../../../components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../../components/ui/dialog"
 
 interface DeleteChainDialogProps {
-  chainId: number | null
-  onConfirm: (id: number) => void
+  chainId: string | null
+  onConfirm: (id: string) => void
   onCancel: () => void
   isPending: boolean
 }
@@ -21,9 +21,7 @@ export function DeleteChainDialog({ chainId, onConfirm, onCancel, isPending }: D
         </DialogHeader>
         <div className="py-4">
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete chain{" "}
-            <span className="font-mono font-medium text-foreground">#{chainId}</span>? 
-            This action cannot be undone.
+            Are you sure you want to delete this chain? This action cannot be undone.
           </p>
         </div>
         <DialogFooter>

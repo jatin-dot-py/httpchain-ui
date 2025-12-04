@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react"
-import { Plus, Search, ArrowUpDown, Trash2, Filter, X, Clock, Link } from "lucide-react"
+import { useState, useMemo, useRef, useEffect } from "react"
+import { Plus, Search, ArrowUpDown, Trash2, Filter, X, Clock, Link, Download, Upload } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
@@ -25,73 +25,116 @@ import { CreateChainDialog } from "../dialogs/CreateChainDialog"
 import { DeleteChainDialog } from "../dialogs/DeleteChainDialog"
 import { DeleteAllChainsDialog } from "../dialogs/DeleteAllChainsDialog"
 import { useAppStore } from "../../../store"
-import { useChainsMeta, useCreateChain, useDeleteChain, useDeleteAllChains, qk } from "../../../services/queries"
-import { useQueryClient } from "@tanstack/react-query"
+import { exportAllChains, importChains } from "../../../services/storage"
+import { toast } from "../../../lib/toast"
 
 type SortKey = "id" | "name" | "created_at" | "updated_at"
 type SortDir = "asc" | "desc"
 
 export function ChainList() {
-  const queryClient = useQueryClient()
+  const chains = useAppStore(s => s.chains)
+  const chainsLoaded = useAppStore(s => s.chainsLoaded)
+  const loadChains = useAppStore(s => s.loadChains)
+  const createChainAction = useAppStore(s => s.createChain)
+  const deleteChainAction = useAppStore(s => s.deleteChain)
+  const deleteAllChainsAction = useAppStore(s => s.deleteAllChains)
   const setSelectedChainId = useAppStore(s => s.setSelectedChainId)
+  
   const [search, setSearch] = useState("")
   const [sortKey, setSortKey] = useState<SortKey>("created_at")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState("")
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [showDeleteAll, setShowDeleteAll] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [isCreating, setIsCreating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isDeletingAll, setIsDeletingAll] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { data, isLoading, isError } = useChainsMeta()
-  const createMutation = useCreateChain()
-  const deleteMutation = useDeleteChain()
-  const deleteAllMutation = useDeleteAllChains()
+  // Load chains on mount
+  useEffect(() => {
+    if (!chainsLoaded) {
+      loadChains()
+    }
+  }, [chainsLoaded, loadChains])
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!name.trim()) return
-    createMutation.mutate(name.trim(), {
-      onSuccess: (created) => {
-        queryClient.setQueryData(qk.chain(created.id), created)
-        setSelectedChainId(created.id)
-        setShowCreate(false)
-        setName("")
-      },
-    })
+    setIsCreating(true)
+    const created = await createChainAction(name.trim())
+    setIsCreating(false)
+    if (created) {
+      setSelectedChainId(created.id)
+      setShowCreate(false)
+      setName("")
+    }
   }
 
-  const handleSelect = async (id: number) => {
+  const handleSelect = (id: string) => {
     setSelectedChainId(id)
   }
 
-  const handleDelete = (id: number) => {
-    deleteMutation.mutate(id, {
-      onSuccess: () => {
-        setDeleteConfirm(null)
-      },
-    })
+  const handleDelete = async (id: string) => {
+    setIsDeleting(true)
+    await deleteChainAction(id)
+    setIsDeleting(false)
+    setDeleteConfirm(null)
   }
 
-  const handleDeleteAll = () => {
-    deleteAllMutation.mutate(undefined, {
-      onSuccess: () => {
-        setShowDeleteAll(false)
-      },
-    })
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true)
+    await deleteAllChainsAction()
+    setIsDeletingAll(false)
+    setShowDeleteAll(false)
+  }
+
+  const handleExport = () => {
+    const json = exportAllChains()
+    const blob = new Blob([json], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `httpchain-backup-${new Date().toISOString().split("T")[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    toast.success("Export complete", "All chains exported successfully")
+  }
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      const result = await importChains(text)
+      await loadChains()
+      toast.success("Import complete", `${result.imported} chains imported`)
+    } catch (err) {
+      toast.error("Import failed", "Invalid backup file")
+    }
+
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   const allTags = useMemo(() => {
-    if (!data) return []
+    if (!chains) return []
     const tagSet = new Set<string>()
-    data.forEach(chain => {
+    chains.forEach(chain => {
       chain.tags?.forEach(tag => tagSet.add(tag))
     })
     return Array.from(tagSet).sort()
-  }, [data])
+  }, [chains])
 
   const filteredSorted = useMemo(() => {
-    if (!data) return []
-    const filtered = data.filter((c) => {
+    if (!chains) return []
+    const filtered = chains.filter((c) => {
       if (search) {
         const q = search.toLowerCase()
         if (!String(c.id).includes(q) && !c.name.toLowerCase().includes(q)) {
@@ -109,12 +152,11 @@ export function ChainList() {
     })
     return filtered.sort((a, b) => {
       const mult = sortDir === "asc" ? 1 : -1
-      if (sortKey === "id") return (a.id - b.id) * mult
       const av = a[sortKey]
       const bv = b[sortKey]
       return av < bv ? -mult : av > bv ? mult : 0
     })
-  }, [data, search, sortKey, sortDir, selectedTags])
+  }, [chains, search, sortKey, sortDir, selectedTags])
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -137,7 +179,7 @@ export function ChainList() {
     setSelectedTags([])
   }
 
-  if (isLoading) {
+  if (!chainsLoaded) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -151,32 +193,16 @@ export function ChainList() {
     )
   }
 
-  if (isError) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center space-y-4 max-w-md px-8">
-          <div className="flex justify-center">
-            <div className="rounded-full bg-destructive/10 p-4">
-              <X className="h-8 w-8 text-destructive" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Failed to load chains</h3>
-            <p className="text-sm text-muted-foreground">
-              We couldn't retrieve your chains. Please check your connection and try again.
-            </p>
-          </div>
-          <Button onClick={() => window.location.reload()} variant="outline">
-            Retry
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!data || data.length === 0) {
+  if (chains.length === 0) {
     return (
       <>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImport}
+          className="hidden"
+        />
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-between px-8 py-6 border-b">
             <div>
@@ -185,10 +211,16 @@ export function ChainList() {
                 Manage your workflow chains
               </p>
             </div>
-            <Button onClick={() => setShowCreate(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Chain
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => fileInputRef.current?.click()} variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+              <Button onClick={() => setShowCreate(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Chain
+              </Button>
+            </div>
           </div>
           <div className="flex-1 flex items-center justify-center px-8">
             <div className="text-center space-y-4 max-w-md">
@@ -200,13 +232,19 @@ export function ChainList() {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">No chains yet</h3>
                 <p className="text-sm text-muted-foreground">
-                  Get started by creating your first chain to organize your workflows.
+                  Get started by creating your first chain or import an existing backup.
                 </p>
               </div>
-              <Button onClick={() => setShowCreate(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Chain
-              </Button>
+              <div className="flex items-center justify-center gap-2">
+                <Button onClick={() => fileInputRef.current?.click()} variant="outline">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Backup
+                </Button>
+                <Button onClick={() => setShowCreate(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Chain
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -217,7 +255,7 @@ export function ChainList() {
           onNameChange={setName}
           onCreate={handleCreate}
           onCancel={() => setShowCreate(false)}
-          isPending={createMutation.isPending}
+          isPending={isCreating}
         />
       </>
     )
@@ -232,11 +270,32 @@ export function ChainList() {
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">Chains</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {data.length} {data.length === 1 ? 'chain' : 'chains'} total
+                {chains.length} {chains.length === 1 ? 'chain' : 'chains'} total
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {data && data.length > 0 && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+              />
+              <Button 
+                onClick={() => fileInputRef.current?.click()} 
+                variant="outline"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+              <Button 
+                onClick={handleExport} 
+                variant="outline"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              {chains.length > 0 && (
                 <Button 
                   onClick={() => setShowDeleteAll(true)} 
                   variant="outline"
@@ -401,8 +460,8 @@ export function ChainList() {
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() => handleSelect(chain.id)}
                     >
-                      <TableCell className="font-mono text-sm">
-                        {chain.id}
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {chain.id.slice(0, 8)}
                       </TableCell>
                       <TableCell className="font-medium">
                         {chain.name}
@@ -490,7 +549,7 @@ export function ChainList() {
         <div className="border-t px-8 py-4 flex items-center justify-between text-sm text-muted-foreground">
           <div>
             Showing <span className="font-medium text-foreground">{filteredSorted.length}</span> of{" "}
-            <span className="font-medium text-foreground">{data.length}</span> chains
+            <span className="font-medium text-foreground">{chains.length}</span> chains
           </div>
           {selectedTags.length > 0 && (
             <Button
@@ -511,22 +570,22 @@ export function ChainList() {
         onNameChange={setName}
         onCreate={handleCreate}
         onCancel={() => setShowCreate(false)}
-        isPending={createMutation.isPending}
+        isPending={isCreating}
       />
 
       <DeleteChainDialog
         chainId={deleteConfirm}
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirm(null)}
-        isPending={deleteMutation.isPending}
+        isPending={isDeleting}
       />
 
       <DeleteAllChainsDialog
         open={showDeleteAll}
-        count={data?.length || 0}
+        count={chains.length}
         onConfirm={handleDeleteAll}
         onCancel={() => setShowDeleteAll(false)}
-        isPending={deleteAllMutation.isPending}
+        isPending={isDeletingAll}
       />
     </TooltipProvider>
   )

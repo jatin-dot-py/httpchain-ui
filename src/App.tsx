@@ -7,16 +7,20 @@ import { BackendUrlDialog } from "./shared/components/BackendUrlDialog"
 
 export default function App() {
   const selectedChainId = useAppStore(s => s.selectedChainId)
-  const backendUrl = useAppStore(s => s.backendUrl)
-
-  // Show backend URL dialog on first load / refresh
-  if (!backendUrl) {
-    return <BackendUrlDialog />
-  }
+  const backendDialogDismissed = useAppStore(s => s.backendDialogDismissed)
+  const setBackendDialogDismissed = useAppStore(s => s.setBackendDialogDismissed)
 
   return (
-    <Shell>
-      {selectedChainId ? <Editor /> : <ChainList />}
-    </Shell>
+    <>
+      {/* Initial backend dialog on page load */}
+      <BackendUrlDialog 
+        open={!backendDialogDismissed} 
+        onClose={() => setBackendDialogDismissed(true)} 
+      />
+      
+      <Shell>
+        {selectedChainId ? <Editor /> : <ChainList />}
+      </Shell>
+    </>
   )
 }

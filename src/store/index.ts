@@ -1,7 +1,8 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { HttpChain, Step } from "../types/schema"
-import { updateChain } from "../services/api"
+import type { ChainMeta, ChainFull } from "../types/chain"
+import * as storage from "../services/storage"
 import { createEmptyStep, generateUUID } from "../types/schema"
 import { toast } from "../lib/toast"
 
@@ -9,22 +10,34 @@ import { toast } from "../lib/toast"
 type Theme = "light" | "dark"
 
 interface AppState {
-  // Backend URL (not persisted - prompts on every refresh)
+  // Backend URL for workflow execution (optional, set when needed)
   backendUrl: string | null
-  setBackendUrl: (url: string) => void
+  setBackendUrl: (url: string | null) => void
+  
+  // Backend dialog dismissed (resets on refresh)
+  backendDialogDismissed: boolean
+  setBackendDialogDismissed: (dismissed: boolean) => void
   
   // Theme
   theme: Theme
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
   
+  // Chains list
+  chains: ChainMeta[]
+  chainsLoaded: boolean
+  loadChains: () => Promise<void>
+  createChain: (name: string) => Promise<ChainFull | null>
+  deleteChain: (id: string) => Promise<void>
+  deleteAllChains: () => Promise<void>
+  
   // Selected Chain
-  selectedChainId: number | null
-  setSelectedChainId: (id: number | null) => void
+  selectedChainId: string | null
+  setSelectedChainId: (id: string | null) => void
   clearSelection: () => void
   
-  // Workflow
-  chainId: number | null
+  // Current Workflow (the chain being edited)
+  chainId: string | null
   workflow: HttpChain | null
   chainUpdatedAt: string | null
   chainTags: string[] | null
@@ -38,7 +51,7 @@ interface AppState {
   setSelectedStepTab: (tab: string | null) => void
   
   // Workflow Actions
-  loadWorkflow: (chainId: number, data: any, updatedAt: string, tags: string[]) => void
+  loadWorkflow: (chainId: string) => Promise<void>
   addInputVariable: (variableName: string) => Promise<void>
   addStep: (step?: Partial<Step>) => Promise<void>
   updateStep: (nodeId: string, updates: Partial<Step>) => Promise<void>
@@ -47,14 +60,6 @@ interface AppState {
   removeInputVariable: (variableName: string) => Promise<void>
   removeStep: (nodeId: string) => Promise<void>
   clearWorkflow: () => void
-}
-
-async function saveWorkflowToDb(chainId: number, workflow: HttpChain) {
-  return await updateChain(chainId, {
-    name: workflow.name,
-    steps: workflow.steps,
-    chain_variables: workflow.chain_variables,
-  })
 }
 
 function getInitialTheme(): Theme {
@@ -73,9 +78,49 @@ function getInitialTheme(): Theme {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      // Backend URL state (not persisted - resets on refresh)
+      // Backend URL for workflow execution (optional)
       backendUrl: null,
       setBackendUrl: (url) => set({ backendUrl: url }),
+      
+      // Backend dialog dismissed (resets on refresh)
+      backendDialogDismissed: false,
+      setBackendDialogDismissed: (dismissed) => set({ backendDialogDismissed: dismissed }),
+      
+      // Chains list
+      chains: [],
+      chainsLoaded: false,
+      loadChains: async () => {
+        const chains = await storage.getChainsMeta()
+        set({ chains, chainsLoaded: true })
+      },
+      createChain: async (name: string) => {
+        try {
+          const newChain = await storage.createChain(name)
+          const chains = await storage.getChainsMeta()
+          set({ chains })
+          return newChain
+        } catch (error) {
+          toast.error("Failed to create chain", error instanceof Error ? error.message : "An unexpected error occurred")
+          return null
+        }
+      },
+      deleteChain: async (id: string) => {
+        try {
+          await storage.deleteChain(id)
+          const chains = await storage.getChainsMeta()
+          set({ chains })
+        } catch (error) {
+          toast.error("Failed to delete chain", error instanceof Error ? error.message : "An unexpected error occurred")
+        }
+      },
+      deleteAllChains: async () => {
+        try {
+          await storage.deleteAllChains()
+          set({ chains: [] })
+        } catch (error) {
+          toast.error("Failed to delete chains", error instanceof Error ? error.message : "An unexpected error occurred")
+        }
+      },
       
       // Theme state
       theme: getInitialTheme(),
@@ -118,33 +163,33 @@ export const useAppStore = create<AppState>()(
       // UI state
       
       // Workflow actions
-      loadWorkflow: (chainId: number, data: any, updatedAt: string, tags: string[]) => {
-        let workflow: HttpChain | null = null
-        
-        if (data) {
+      loadWorkflow: async (chainId: string) => {
+        set({ isLoading: true })
+        try {
+          const data = await storage.getChain(chainId)
           const steps = (data.steps || []).map((step: any): Step => ({
             ...step,
             node_id: step.node_id || generateUUID(),
           }))
           
-          workflow = {
+          const workflow: HttpChain = {
             version: data.version || 1,
             name: data.name || "New Chain",
             steps,
             chain_variables: data.chain_variables || [],
           }
+          
+          set({ 
+            chainId, 
+            workflow, 
+            chainUpdatedAt: data.updated_at, 
+            chainTags: data.tags || [], 
+            isLoading: false 
+          })
+        } catch (error) {
+          toast.error("Failed to load workflow", error instanceof Error ? error.message : "An unexpected error occurred")
+          set({ isLoading: false })
         }
-        
-        if (!workflow) {
-          workflow = {
-            version: 1,
-            name: "New Chain",
-            chain_variables: [],
-            steps: [],
-          }
-        }
-        
-        set({ chainId, workflow, chainUpdatedAt: updatedAt, chainTags: tags, isLoading: false })
       },
       
       addInputVariable: async (variableName: string) => {
@@ -164,7 +209,11 @@ export const useAppStore = create<AppState>()(
         set({ workflow: updatedWorkflow, isSaving: true })
         
         try {
-          const response = await saveWorkflowToDb(chainId, updatedWorkflow)
+          const response = await storage.updateChain(chainId, {
+            name: updatedWorkflow.name,
+            steps: updatedWorkflow.steps,
+            chain_variables: updatedWorkflow.chain_variables,
+          })
           set({ 
             chainUpdatedAt: response.updated_at,
             chainTags: response.tags,
@@ -194,7 +243,11 @@ export const useAppStore = create<AppState>()(
         set({ workflow: updatedWorkflow, isSaving: true })
         
         try {
-          const response = await saveWorkflowToDb(chainId, updatedWorkflow)
+          const response = await storage.updateChain(chainId, {
+            name: updatedWorkflow.name,
+            steps: updatedWorkflow.steps,
+            chain_variables: updatedWorkflow.chain_variables,
+          })
           set({ 
             chainUpdatedAt: response.updated_at,
             chainTags: response.tags,
@@ -228,7 +281,11 @@ export const useAppStore = create<AppState>()(
         set({ workflow: updatedWorkflow, isSaving: true })
         
         try {
-          const response = await saveWorkflowToDb(chainId, updatedWorkflow)
+          const response = await storage.updateChain(chainId, {
+            name: updatedWorkflow.name,
+            steps: updatedWorkflow.steps,
+            chain_variables: updatedWorkflow.chain_variables,
+          })
           set({ 
             chainUpdatedAt: response.updated_at,
             chainTags: response.tags,
@@ -241,7 +298,7 @@ export const useAppStore = create<AppState>()(
       },
       
       updateChainName: async (name: string) => {
-        const { chainId, workflow } = get()
+        const { chainId, workflow, chains } = get()
         if (!chainId || !workflow) return
         
         const updatedWorkflow: HttpChain = {
@@ -252,8 +309,17 @@ export const useAppStore = create<AppState>()(
         set({ workflow: updatedWorkflow, isSaving: true })
         
         try {
-          const response = await saveWorkflowToDb(chainId, updatedWorkflow)
+          const response = await storage.updateChain(chainId, {
+            name: updatedWorkflow.name,
+            steps: updatedWorkflow.steps,
+            chain_variables: updatedWorkflow.chain_variables,
+          })
+          // Also update chains list
+          const updatedChains = chains.map(c => 
+            c.id === chainId ? { ...c, name, updated_at: response.updated_at } : c
+          )
           set({ 
+            chains: updatedChains,
             chainUpdatedAt: response.updated_at,
             chainTags: response.tags,
             isSaving: false 
@@ -265,15 +331,20 @@ export const useAppStore = create<AppState>()(
       },
       
       updateChainTags: async (tags: string[]) => {
-        const { chainId } = get()
+        const { chainId, chains } = get()
         if (!chainId) return
         
         const prevTags = get().chainTags
         set({ chainTags: tags, isSaving: true })
         
         try {
-          const response = await updateChain(chainId, { tags })
+          const response = await storage.updateChain(chainId, { tags })
+          // Also update chains list
+          const updatedChains = chains.map(c => 
+            c.id === chainId ? { ...c, tags, updated_at: response.updated_at } : c
+          )
           set({ 
+            chains: updatedChains,
             chainUpdatedAt: response.updated_at,
             chainTags: response.tags,
             isSaving: false 
@@ -296,7 +367,11 @@ export const useAppStore = create<AppState>()(
         set({ workflow: updatedWorkflow, isSaving: true })
         
         try {
-          const response = await saveWorkflowToDb(chainId, updatedWorkflow)
+          const response = await storage.updateChain(chainId, {
+            name: updatedWorkflow.name,
+            steps: updatedWorkflow.steps,
+            chain_variables: updatedWorkflow.chain_variables,
+          })
           set({ 
             chainUpdatedAt: response.updated_at,
             chainTags: response.tags,
@@ -320,7 +395,11 @@ export const useAppStore = create<AppState>()(
         set({ workflow: updatedWorkflow, isSaving: true })
         
         try {
-          const response = await saveWorkflowToDb(chainId, updatedWorkflow)
+          const response = await storage.updateChain(chainId, {
+            name: updatedWorkflow.name,
+            steps: updatedWorkflow.steps,
+            chain_variables: updatedWorkflow.chain_variables,
+          })
           set({ 
             chainUpdatedAt: response.updated_at,
             chainTags: response.tags,

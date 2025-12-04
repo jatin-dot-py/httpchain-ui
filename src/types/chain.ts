@@ -1,5 +1,5 @@
 export interface ChainMeta {
-  id: number
+  id: string
   name: string
   tags: string[]
   created_at: string

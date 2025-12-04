@@ -1,27 +1,30 @@
 import { useEffect } from "react"
 import { Loader2, AlertCircle } from "lucide-react"
 import { useAppStore } from "@/store"
-import { useChain } from "@/services/queries"
 import { EditorLayout } from "./EditorLayout"
 
 
 export default function Editor() {
   const selectedId = useAppStore(s => s.selectedChainId)
   const clearSelection = useAppStore(s => s.clearSelection)
-  const { data: chain, isLoading, isError } = useChain(selectedId ?? undefined)
-  
+  const workflow = useAppStore(s => s.workflow)
+  const isLoading = useAppStore(s => s.isLoading)
   const loadWorkflow = useAppStore(s => s.loadWorkflow)
   const clearWorkflow = useAppStore(s => s.clearWorkflow)
 
+  // Load workflow when selectedId changes
   useEffect(() => {
-    if (chain) {
-      loadWorkflow(chain.id, chain, chain.updated_at, chain.tags || [])
+    if (selectedId) {
+      loadWorkflow(selectedId)
     }
-    
+  }, [selectedId, loadWorkflow])
+
+  // Cleanup on unmount only
+  useEffect(() => {
     return () => {
       clearWorkflow()
     }
-  }, [chain, loadWorkflow, clearWorkflow])
+  }, [clearWorkflow])
 
   const handleBack = () => {
     clearWorkflow()
@@ -41,7 +44,7 @@ export default function Editor() {
         </div>
       )}
       
-      {isError && (
+      {!isLoading && !workflow && (
         <div className="h-full flex items-center justify-center">
           <div className="flex items-center gap-3 text-destructive">
             <AlertCircle className="w-5 h-5" />
@@ -50,10 +53,9 @@ export default function Editor() {
         </div>
       )}
       
-      {chain && !isLoading && !isError && (
+      {workflow && !isLoading && (
         <EditorLayout onBack={handleBack} />
       )}
     </div>
   )
 }
-
