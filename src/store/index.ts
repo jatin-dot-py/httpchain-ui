@@ -9,6 +9,10 @@ import { toast } from "../lib/toast"
 type Theme = "light" | "dark"
 
 interface AppState {
+  // Backend URL (not persisted - prompts on every refresh)
+  backendUrl: string | null
+  setBackendUrl: (url: string) => void
+  
   // Theme
   theme: Theme
   setTheme: (theme: Theme) => void
@@ -69,6 +73,10 @@ function getInitialTheme(): Theme {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      // Backend URL state (not persisted - resets on refresh)
+      backendUrl: null,
+      setBackendUrl: (url) => set({ backendUrl: url }),
+      
       // Theme state
       theme: getInitialTheme(),
       setTheme: (theme) => {

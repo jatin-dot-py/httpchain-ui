@@ -1,7 +1,14 @@
 import type { ChainFull, ChainMeta } from "../types/chain"
+import { useAppStore } from "../store"
 
 const DEFAULT_BASE = "http://localhost:8000"
-export const API_BASE = import.meta.env.VITE_API_BASE || DEFAULT_BASE
+
+// Get API base URL from store, fallback to env var or default
+export function getApiBase(): string {
+  const storeUrl = useAppStore.getState().backendUrl
+  if (storeUrl) return storeUrl
+  return import.meta.env.VITE_API_BASE || DEFAULT_BASE
+}
 
 async function handleJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -20,17 +27,17 @@ async function handleJson<T>(res: Response): Promise<T> {
 }
 
 export async function getChainsMeta(): Promise<ChainMeta[]> {
-  const res = await fetch(`${API_BASE}/chain/all`, { credentials: "include" })
+  const res = await fetch(`${getApiBase()}/chain/all`, { credentials: "include" })
   return handleJson<ChainMeta[]>(res)
 }
 
 export async function getChain(id: number): Promise<ChainFull> {
-  const res = await fetch(`${API_BASE}/chain/${id}`, { credentials: "include" })
+  const res = await fetch(`${getApiBase()}/chain/${id}`, { credentials: "include" })
   return handleJson<ChainFull>(res)
 }
 
 export async function createChain(name: string): Promise<ChainFull> {
-  const res = await fetch(`${API_BASE}/create/`, {
+  const res = await fetch(`${getApiBase()}/create/`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -40,7 +47,7 @@ export async function createChain(name: string): Promise<ChainFull> {
 }
 
 export async function deleteChain(id: number): Promise<{ deleted: number; id?: number }> {
-  const res = await fetch(`${API_BASE}/delete/${id}`, {
+  const res = await fetch(`${getApiBase()}/delete/${id}`, {
     method: "DELETE",
     credentials: "include",
   })
@@ -48,7 +55,7 @@ export async function deleteChain(id: number): Promise<{ deleted: number; id?: n
 }
 
 export async function deleteAllChains(): Promise<{ deleted: number }> {
-  const res = await fetch(`${API_BASE}/delete/all`, {
+  const res = await fetch(`${getApiBase()}/delete/all`, {
     method: "DELETE",
     credentials: "include",
   })
@@ -59,7 +66,7 @@ export async function updateChain(
   id: number,
   data: { name?: string; steps?: any[]; chain_variables?: string[]; tags?: string[] }
 ): Promise<ChainFull> {
-  const res = await fetch(`${API_BASE}/update/${id}`, {
+  const res = await fetch(`${getApiBase()}/update/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
