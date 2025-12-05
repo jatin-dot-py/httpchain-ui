@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PathBuilder } from "./PathBuilder"
@@ -28,6 +28,10 @@ export function DeclarativeCheckExtractor({
   const [checkValue, setCheckValue] = useState(value.value)
   const [variableName, setVariableName] = useState(value.variable_name || "")
   const [path, setPath] = useState<string[]>(value.path || [])
+  
+  // Use ref to store onChange to avoid dependency issues
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
 
   // Operators that don't need a value
   const operatorsWithoutValue: DeclarativeOperator[] = [
@@ -47,8 +51,8 @@ export function DeclarativeCheckExtractor({
       // Include variable_name only if showVariable is true and variableName exists
       ...(showVariable && variableName ? { variable_name: variableName } : {}),
     }
-    onChange(newValue)
-  }, [path, operator, checkValue, variableName, needsValue, showPath, showVariable, availableVariables, onChange])
+    onChangeRef.current(newValue)
+  }, [path, operator, checkValue, variableName, needsValue, showPath, showVariable])
 
   return (
     <div className="space-y-4">
