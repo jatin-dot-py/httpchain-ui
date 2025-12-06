@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { Plus, X, Edit2, Trash2, Filter, Check, GitBranch, Hash, AlertCircle } from "lucide-react"
+import { Edit2, Trash2, Filter, Check, Code, Regex, Braces, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,8 @@ import { useActiveStep } from "@/features/editor/hooks/useActiveStep"
 import type { Extractor, ExtractorType, DeclarativeCheck, RegexExtractor } from "@/types/schema"
 import { ExtractorType as ExtractorTypeEnum } from "@/types/schema"
 import { DeclarativeOperator as DeclarativeOperatorEnum } from "@/types/schema"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 type AddingType = ExtractorType | null
 
@@ -39,11 +41,7 @@ export function ExtractorsEditor() {
   // Get all used extractor keys for duplicate checking
   const usedKeys = useMemo(() => {
     const keys = new Set<string>()
-    
-    // Add forbidden keys (chain variables + dependency variables)
     forbiddenKeys.forEach(k => keys.add(k))
-    
-    // Add extractor keys from all steps (excluding current step if editing)
     if (workflow?.steps) {
       workflow.steps.forEach(s => {
         if (s.node_id !== selectedStepNodeId && s.request.extractors) {
@@ -53,14 +51,11 @@ export function ExtractorsEditor() {
         }
       })
     }
-    
-    // Add extractor keys from current step (excluding the one being edited)
     extractors.forEach((extractor, index) => {
       if (editingIndex === null || index !== editingIndex) {
         keys.add(extractor.extractor_key)
       }
     })
-    
     return keys
   }, [workflow, selectedStepNodeId, extractors, editingIndex, forbiddenKeys])
 
@@ -69,7 +64,6 @@ export function ExtractorsEditor() {
     return usedKeys.has(extractorKey.trim())
   }, [extractorKey, usedKeys])
   
-  // Form state for different extractor types
   const [declarativeCheck, setDeclarativeCheck] = useState<DeclarativeCheck>({
     path: [],
     operator: DeclarativeOperatorEnum.EXISTS,
@@ -118,13 +112,8 @@ export function ExtractorsEditor() {
 
   const handleSave = () => {
     if (!extractorKey.trim() || !addingType) return
-    
     const trimmedKey = extractorKey.trim()
-    
-    // Check for duplicates
-    if (usedKeys.has(trimmedKey)) {
-      return // Don't save if duplicate
-    }
+    if (usedKeys.has(trimmedKey)) return
 
     let newExtractor: Extractor = {
       extractor_key: trimmedKey,
@@ -173,43 +162,46 @@ export function ExtractorsEditor() {
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between pb-2 border-b">
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium">Extractors</h3>
+          <Filter className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Data Extraction</h3>
           {extractors.length > 0 && (
-            <span className="text-xs text-muted-foreground">({extractors.length})</span>
+            <Badge variant="secondary" className="text-xs">{extractors.length}</Badge>
           )}
         </div>
         {!isFormVisible && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               onClick={() => handleStartAdd(ExtractorTypeEnum.DECLARATIVE_CHECK)}
               disabled={disabled}
+              className="h-8 text-xs hover:bg-primary/10 hover:text-primary"
             >
-              <GitBranch className="h-3.5 w-3.5 mr-1.5" />
-              Add Declarative Check
+              <Code className="h-3 w-3 mr-1.5" />
+              Declarative
             </Button>
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               onClick={() => handleStartAdd(ExtractorTypeEnum.JSONPATHARRAY)}
               disabled={disabled}
+              className="h-8 text-xs hover:bg-primary/10 hover:text-primary"
             >
-              <Hash className="h-3.5 w-3.5 mr-1.5" />
-              Add JSON Path
+              <Braces className="h-3 w-3 mr-1.5" />
+              JSON Path
             </Button>
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               onClick={() => handleStartAdd(ExtractorTypeEnum.REGEX)}
               disabled={disabled}
+              className="h-8 text-xs hover:bg-primary/10 hover:text-primary"
             >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Add Regex
+              <Regex className="h-3 w-3 mr-1.5" />
+              Regex
             </Button>
           </div>
         )}
@@ -217,157 +209,155 @@ export function ExtractorsEditor() {
 
       {/* Inline Form */}
       {isFormVisible && (
-        <div className="border rounded-lg p-4 bg-card space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">
-              {editingIndex !== null ? "Edit Extractor" : "Add Extractor"}
-            </h4>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={handleCancel}
-              disabled={disabled}
-              className="h-7 w-7"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+        <div className="animate-in slide-in-from-top-2 duration-200 space-y-4 py-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                {editingIndex !== null ? "Edit Extractor" : "New Extractor"}
+              </h4>
+            </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="extractor_key">Extractor Key</Label>
-              <Input
-                id="extractor_key"
-                value={extractorKey}
-                onChange={(e) => setExtractorKey(e.target.value)}
-                placeholder="e.g., user_id, token, status"
-                disabled={disabled}
-                className={isDuplicate ? "border-destructive" : ""}
-              />
-              {isDuplicate ? (
-                <div className="flex items-center gap-2 text-xs text-destructive">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  <span>
-                    {forbiddenKeys.has(extractorKey.trim()) 
-                      ? "This key cannot be used (reserved for chain variables or dependencies)"
-                      : "This key is already used in another step"}
-                  </span>
+            <div className="space-y-4 pl-1">
+              <div className="space-y-1.5">
+                <Label htmlFor="extractor_key" className="text-xs font-medium text-muted-foreground">Variable Name (Key)</Label>
+                <Input
+                  id="extractor_key"
+                  value={extractorKey}
+                  onChange={(e) => setExtractorKey(e.target.value)}
+                  placeholder="e.g., user_id, token"
+                  disabled={disabled}
+                  className={cn("h-9 font-mono text-sm", isDuplicate ? "border-destructive" : "")}
+                />
+                {isDuplicate && (
+                  <div className="flex items-center gap-2 text-[10px] text-destructive animate-in fade-in">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>Key unavailable</span>
+                  </div>
+                )}
+              </div>
+
+              {addingType === ExtractorTypeEnum.DECLARATIVE_CHECK && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Path Selection</Label>
+                  <DeclarativeCheckExtractor
+                    value={declarativeCheck}
+                    onChange={setDeclarativeCheck}
+                    disabled={disabled}
+                    showPath={true}
+                    showVariable={false}
+                  />
                 </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  The variable name that will store the extracted value (must be unique and cannot be a chain variable or dependency)
-                </p>
               )}
+
+              {addingType === ExtractorTypeEnum.REGEX && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Regex Configuration</Label>
+                  <RegexExtractorForm
+                    value={regexExtractor}
+                    onChange={setRegexExtractor}
+                    disabled={disabled}
+                  />
+                </div>
+              )}
+
+              {addingType === ExtractorTypeEnum.JSONPATHARRAY && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">JSON Path Configuration</Label>
+                  <JsonPathArrayExtractor
+                    value={jsonPathArray}
+                    onChange={setJsonPathArray}
+                    disabled={disabled}
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t mt-4 border-dashed">
+                <Button
+                  variant="ghost"
+                  onClick={handleCancel}
+                  disabled={disabled}
+                  size="sm"
+                  className="h-7 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={disabled || !isValid}
+                  size="sm"
+                  className="h-7 text-xs"
+                >
+                  <Check className="h-3 w-3 mr-1.5" />
+                  {editingIndex !== null ? "Update" : "Add"}
+                </Button>
+              </div>
             </div>
-
-            {addingType === ExtractorTypeEnum.DECLARATIVE_CHECK && (
-              <DeclarativeCheckExtractor
-                value={declarativeCheck}
-                onChange={setDeclarativeCheck}
-                disabled={disabled}
-                showPath={true}
-                showVariable={false}
-              />
-            )}
-
-            {addingType === ExtractorTypeEnum.REGEX && (
-              <RegexExtractorForm
-                value={regexExtractor}
-                onChange={setRegexExtractor}
-                disabled={disabled}
-              />
-            )}
-
-            {addingType === ExtractorTypeEnum.JSONPATHARRAY && (
-              <JsonPathArrayExtractor
-                value={jsonPathArray}
-                onChange={setJsonPathArray}
-                disabled={disabled}
-              />
-            )}
-
-            <div className="flex items-center gap-2 pt-2">
-              <Button
-                onClick={handleSave}
-                disabled={disabled || !isValid}
-                size="sm"
-              >
-                <Check className="h-3.5 w-3.5 mr-1.5" />
-                {editingIndex !== null ? "Save Changes" : "Add Extractor"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                disabled={disabled}
-                size="sm"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
         </div>
       )}
 
       {/* Extractor List */}
-      {extractors.length === 0 && !isFormVisible ? (
-        <div className="text-center py-8 border border-dashed rounded-lg text-sm text-muted-foreground">
-          No extractors yet. Use the buttons above to add one.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {extractors.map((extractor, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-3 border rounded-lg bg-card"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{extractor.extractor_key}</span>
-                  <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded">
-                    {extractor.extractor_type}
-                  </span>
+      {!isFormVisible && (
+        extractors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 border border-dashed rounded-lg bg-muted/5">
+            <Filter className="h-8 w-8 text-muted-foreground/30 mb-2" />
+            <p className="text-sm font-medium text-muted-foreground">No extractors configured</p>
+            <p className="text-xs text-muted-foreground/70">Add an extractor to save values</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {extractors.map((extractor, index) => (
+              <div 
+                key={index} 
+                className="group flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+              >
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold font-mono text-primary">{extractor.extractor_key}</span>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider border-muted-foreground/30 text-muted-foreground">
+                      {extractor.extractor_type.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                    {extractor.extractor_type === ExtractorTypeEnum.JSONPATHARRAY && 
+                      extractor.jsonpatharray_extractor && 
+                      <span className="font-mono">{extractor.jsonpatharray_extractor.join(" → ")}</span>}
+                    {extractor.extractor_type === ExtractorTypeEnum.REGEX && 
+                      extractor.regex_extractor && 
+                      <span className="font-mono">/{extractor.regex_extractor.pattern}/</span>}
+                    {extractor.extractor_type === ExtractorTypeEnum.DECLARATIVE_CHECK && 
+                      extractor.declarative_check_extractor && (
+                        <div className="flex items-center gap-1">
+                           <span className="font-mono">{extractor.declarative_check_extractor.operator}</span>
+                           {extractor.declarative_check_extractor.value !== undefined && (
+                            <ValueDisplay value={extractor.declarative_check_extractor.value} />
+                           )}
+                        </div>
+                      )}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-                  {extractor.extractor_type === ExtractorTypeEnum.JSONPATHARRAY && 
-                    extractor.jsonpatharray_extractor && 
-                    <span>Path: {extractor.jsonpatharray_extractor.join(" → ")}</span>}
-                  {extractor.extractor_type === ExtractorTypeEnum.REGEX && 
-                    extractor.regex_extractor && 
-                    <span>Pattern: {extractor.regex_extractor.pattern}</span>}
-                  {extractor.extractor_type === ExtractorTypeEnum.DECLARATIVE_CHECK && 
-                    extractor.declarative_check_extractor && (
-                      <>
-                        <span>Operator: {extractor.declarative_check_extractor.operator}</span>
-                        {extractor.declarative_check_extractor.value !== undefined && (
-                          <ValueDisplay value={extractor.declarative_check_extractor.value} />
-                        )}
-                      </>
-                    )}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => handleStartEdit(index)}
+                    disabled={disabled}
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDelete(index)}
+                    disabled={disabled}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={() => handleStartEdit(index)}
-                  disabled={disabled || isFormVisible}
-                >
-                  <Edit2 className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(index)}
-                  disabled={disabled || isFormVisible}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )
       )}
     </div>
   )

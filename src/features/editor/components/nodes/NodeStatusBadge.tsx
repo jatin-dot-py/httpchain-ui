@@ -1,38 +1,35 @@
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export type NodeStatus = "success" | "warning" | "error" | "normal"
 
 interface NodeStatusBadgeProps {
   status: NodeStatus
-  color: string
+  color?: string
+  className?: string
 }
 
-export function NodeStatusBadge({ status }: NodeStatusBadgeProps) {
+export function NodeStatusBadge({ status, className }: NodeStatusBadgeProps) {
   if (status === "normal") return null
 
   const getBadgeColor = () => {
     switch (status) {
       case "success":
-        return "bg-green-500"
+        return "text-green-500"
       case "warning":
-        return "bg-yellow-500"
+        return "text-yellow-500"
       case "error":
-        return "bg-red-500"
+        return "text-destructive"
       default:
         return ""
     }
   }
 
-
   return (
-    <div className="absolute -top-2 -right-2 z-20" style={{ pointerEvents: 'none' }}>
-      {/* Status icon - no outer boundary */}
-      <div className={`w-8 h-8 rounded-full ${getBadgeColor()} flex items-center justify-center shadow-lg`}>
-        {status === "success" && <CheckCircle2 className="h-6 w-6 text-white" />}
-        {status === "warning" && <AlertTriangle className="h-6 w-6 text-white" />}
-        {status === "error" && <XCircle className="h-6 w-6 text-white" />}
-      </div>
+    <div className={cn("flex items-center justify-center", className)}>
+      {status === "success" && <CheckCircle2 className={cn("h-5 w-5", getBadgeColor())} />}
+      {status === "warning" && <AlertTriangle className={cn("h-5 w-5", getBadgeColor())} />}
+      {status === "error" && <XCircle className={cn("h-5 w-5", getBadgeColor())} />}
     </div>
   )
 }
-

@@ -1,6 +1,6 @@
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, Trash2 } from "lucide-react"
 import { Button } from "../../../components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../../components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../../../components/ui/dialog"
 
 interface DeleteAllChainsDialogProps {
   open: boolean
@@ -13,29 +13,48 @@ interface DeleteAllChainsDialogProps {
 export function DeleteAllChainsDialog({ open, count, onConfirm, onCancel, isPending }: DeleteAllChainsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onCancel}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-destructive" />
-            Delete All Chains
-          </DialogTitle>
+      <DialogContent className="sm:max-w-md gap-0 p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-2">
+           <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-destructive/10 ring-1 ring-destructive/20">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl">Delete All Chains</DialogTitle>
+              <DialogDescription className="mt-1">
+                This action is extremely destructive.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
-        <div className="py-4">
-          <p className="text-sm text-muted-foreground mb-3">
-            Are you sure you want to delete <span className="font-semibold text-foreground">all {count} chains</span>?
+
+        <div className="p-6 pt-2 space-y-3">
+          <p className="text-sm text-muted-foreground">
+             You are about to delete <span className="font-semibold text-foreground">{count} chains</span>.
           </p>
-          <p className="text-sm text-destructive font-medium">
-            This action cannot be undone and will permanently delete all workflow chains.
-          </p>
+          <div className="text-sm bg-destructive/10 text-destructive p-3 rounded-md border border-destructive/20">
+             <p className="font-semibold">Warning:</p>
+             <p>This action cannot be undone. All workflow chains will be permanently lost.</p>
+          </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+
+        <DialogFooter className="p-6 pt-2 bg-muted/20">
+          <Button variant="ghost" onClick={onCancel} disabled={isPending}>Cancel</Button>
           <Button variant="destructive" onClick={onConfirm} disabled={isPending}>
-            {isPending ? "Deleting..." : "Delete All"}
+             {isPending ? (
+              <>
+                <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete All
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-

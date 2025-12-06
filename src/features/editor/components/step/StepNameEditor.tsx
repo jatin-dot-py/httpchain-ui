@@ -35,7 +35,7 @@ export function StepNameEditor() {
   }
 
   return (
-    <div className="flex-1 min-w-0 mr-4">
+    <div className="flex-1 min-w-0">
       {isEditing ? (
         <div className="flex items-center gap-2">
           <Input
@@ -45,7 +45,7 @@ export function StepNameEditor() {
               if (e.key === "Enter") handleSave()
               if (e.key === "Escape") handleCancel()
             }}
-            className="text-base font-medium h-9"
+            className="text-lg font-semibold h-8"
             autoFocus
             disabled={isSaving}
           />
@@ -54,7 +54,7 @@ export function StepNameEditor() {
             variant="ghost"
             onClick={handleSave}
             disabled={isSaving || !editedName.trim()}
-            className="h-8 w-8"
+            className="h-8 w-8 hover:bg-green-500/10 hover:text-green-600"
           >
             <Check className="h-4 w-4" />
           </Button>
@@ -63,25 +63,19 @@ export function StepNameEditor() {
             variant="ghost"
             onClick={handleCancel}
             disabled={isSaving}
-            className="h-8 w-8"
+            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       ) : (
-        <div className="flex items-center gap-2 group">
-          <h2 className="text-base font-medium">{step.name}</h2>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={handleStartEdit}
-          >
-            <Edit2 className="h-3.5 w-3.5" />
-          </Button>
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={handleStartEdit}>
+          <h2 className="text-lg font-semibold tracking-tight hover:underline decoration-muted-foreground/50 underline-offset-4 decoration-dashed">
+             {step.name}
+          </h2>
+          <Edit2 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
       )}
     </div>
   )
 }
-

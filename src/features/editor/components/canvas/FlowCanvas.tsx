@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ReactFlow, Background, Controls, MiniMap, useNodesState, useEdgesState } from '@xyflow/react'
+import { ReactFlow, Background, Controls, MiniMap, useNodesState, useEdgesState, BackgroundVariant } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useAppStore } from "@/store"
 import { nodeTypes } from "../nodes"
@@ -31,8 +31,14 @@ export function FlowCanvas() {
         elementsSelectable={true}
         fitView
         colorMode={theme}
+        className="bg-background"
       >
-        <Background />
+        <Background 
+          variant={BackgroundVariant.Lines} 
+          gap={24} 
+          size={1} 
+          className="opacity-[0.15]"
+        />
         <Controls />
         <MiniMap nodeColor={(node) => {
           if (node.type === "inputVariable") return "green"

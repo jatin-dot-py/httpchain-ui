@@ -34,11 +34,28 @@ function applyLayout(nodes: FlowNode[], edges: FlowEdge[], direction = "TB") {
     edgesep: 30,
   });
 
-  // Dagre needs width/height. We give rough estimates.
+  // Dagre needs width/height. We give rough estimates based on the new Shadcn Cards.
   nodes.forEach((n) => {
+    let width = 200;
+    let height = 100;
+
+    if (n.type === "step") {
+      width = 280; // w-64 is 256px, plus some padding
+      height = 120;
+    } else if (n.type === "inputVariable") {
+      width = 220; // min 180, max 240
+      height = 100;
+    } else if (n.type === "condition") {
+      width = 210; // w-48 is 192px
+      height = 120;
+    } else if (n.type === "extractor") {
+      width = 220; // min 180, max 240
+      height = 100;
+    }
+
     dagreGraph.setNode(n.id, {
-      width: n.width || 110,
-      height: n.height || 40,
+      width,
+      height,
     });
   });
 

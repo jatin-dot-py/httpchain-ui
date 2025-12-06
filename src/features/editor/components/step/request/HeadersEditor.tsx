@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import { useAppStore } from "@/store"
 import { useActiveStep } from "@/features/editor/hooks/useActiveStep"
 import { SimpleJSONEditor } from "../shared/SimpleJSONEditor"
+import { FileText } from "lucide-react"
 
 export function HeadersEditor() {
   const step = useActiveStep()
@@ -27,12 +28,23 @@ export function HeadersEditor() {
   }
 
   return (
-    <SimpleJSONEditor
-      data={headers}
-      onUpdate={handleUpdate}
-      disabled={isSaving}
-      availableVariables={availableVariables}
-    />
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 pb-2 border-b">
+        <FileText className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold">Request Headers</h3>
+      </div>
+      
+      <div className="pl-2">
+        <div className="text-xs text-muted-foreground mb-4">
+          Add custom headers to your request (e.g. Content-Type, Authorization).
+        </div>
+        <SimpleJSONEditor
+          data={headers}
+          onUpdate={handleUpdate}
+          disabled={isSaving}
+          availableVariables={availableVariables}
+        />
+      </div>
+    </div>
   )
 }
-

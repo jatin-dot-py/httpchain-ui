@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import { useAppStore } from "@/store"
 import { NodeList } from "./NodeList"
 
@@ -71,89 +72,92 @@ export function Sidebar({ onBack }: SidebarProps) {
   return (
     <div className="h-full w-full border-r bg-background flex flex-col">
       {/* Header */}
-      <div className="border-b px-4 py-4 space-y-3">
-        {/* Name */}
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSave()
-                if (e.key === "Escape") handleCancel()
-              }}
-              className="flex-1 h-9"
-              autoFocus
-              disabled={isSaving}
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9"
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              <Check className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9"
-              onClick={handleCancel}
-              disabled={isSaving}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 group">
-            <h2 className="text-base font-semibold truncate flex-1">{workflow.name}</h2>
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : (
-              <>
+      <div className="p-4 space-y-4">
+        {/* Navigation & Name */}
+        <div className="flex items-center gap-2">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 -ml-2 text-muted-foreground hover:text-foreground"
+            onClick={onBack}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          
+          <div className="flex-1 min-w-0">
+             {isEditing ? (
+              <div className="flex items-center gap-1">
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSave()
+                    if (e.key === "Escape") handleCancel()
+                  }}
+                  className="h-8 text-sm"
+                  autoFocus
+                  disabled={isSaving}
+                />
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100"
-                  onClick={handleStartEdit}
+                  className="h-8 w-8"
+                  onClick={handleSave}
+                  disabled={isSaving}
                 >
-                  <Edit2 className="h-4 w-4" />
+                  <Check className="h-4 w-4" />
                 </Button>
                 <Button
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8"
-                  onClick={onBack}
+                  onClick={handleCancel}
+                  disabled={isSaving}
                 >
                   <X className="h-4 w-4" />
                 </Button>
-              </>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 group">
+                <h2 className="text-lg font-semibold truncate">{workflow.name}</h2>
+                {isSaving ? (
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                ) : (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handleStartEdit}
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
 
         {/* Tags */}
         <div className="flex flex-wrap gap-2">
-          {chainTags && chainTags.length > 0 && chainTags.map((tag, idx) => (
+          {chainTags && chainTags.map((tag, idx) => (
             <Badge
               key={idx}
               variant="secondary"
-              className="text-xs px-2.5 py-0.5 cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+              className="text-xs px-2 py-0.5 hover:bg-destructive hover:text-destructive-foreground cursor-pointer transition-colors"
               onClick={() => handleRemoveTag(tag)}
             >
               {tag}
-              <X className="h-3 w-3 ml-1.5" />
+              <X className="h-3 w-3 ml-1.5 opacity-50" />
             </Badge>
           ))}
           
           {isAddingTag ? (
-            <div className="flex gap-1.5 flex-1 min-w-[120px]">
+            <div className="flex gap-1 items-center">
               <Input
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Tag name..."
-                className="h-7 text-xs flex-1"
+                placeholder="Tag..."
+                className="h-6 w-24 text-xs"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && newTag.trim()) handleAddTag()
@@ -163,54 +167,57 @@ export function Sidebar({ onBack }: SidebarProps) {
                   }
                 }}
                 onBlur={() => {
-                  if (!newTag.trim()) {
-                    setIsAddingTag(false)
-                  }
+                  if (!newTag.trim()) setIsAddingTag(false)
                 }}
               />
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7"
+                className="h-6 w-6"
                 onClick={handleAddTag}
                 disabled={isSaving || !newTag.trim()}
               >
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3 w-3" />
               </Button>
             </div>
           ) : (
             <Button
               variant="outline"
               size="sm"
-              className="h-7 px-2.5 text-xs"
+              className="h-6 px-2 text-xs border-dashed"
               onClick={() => setIsAddingTag(true)}
             >
               <Plus className="h-3 w-3 mr-1" />
-              Add tag
+              Tag
             </Button>
           )}
         </div>
 
-        {/* Last edited */}
+        {/* Meta info */}
         {chainUpdatedAt && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" />
-            <span>Edited {formatDistanceToNow(new Date(chainUpdatedAt), { addSuffix: true })}</span>
+            <Clock className="h-3 w-3" />
+            <span>Last edited {formatDistanceToNow(new Date(chainUpdatedAt), { addSuffix: true })}</span>
           </div>
         )}
       </div>
+
+      <Separator />
 
       {/* Content */}
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-6">
-            {/* Section Header */}
-            <div className="flex items-center gap-2">
-              <Workflow className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium">Nodes</h3>
-              <Badge variant="secondary" className="ml-auto text-xs">
-                {(workflow?.steps.length || 0) + (workflow?.chain_variables.length || 0)}
-              </Badge>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-1 rounded bg-muted">
+                <Workflow className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium">Structure</h3>
+                <p className="text-xs text-muted-foreground">
+                  {(workflow?.steps.length || 0) + (workflow?.chain_variables.length || 0)} nodes
+                </p>
+              </div>
             </div>
 
             <NodeList />

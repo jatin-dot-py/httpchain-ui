@@ -1,11 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from "react"
-import { Plus, Search, ArrowUpDown, Trash2, Filter, X, Clock, Link, Download, Upload } from "lucide-react"
+import { Plus, Search, Trash2, Filter, X, Clock, Link, Download, Upload, ArrowUpDown } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { ScrollArea } from "../../../components/ui/scroll-area"
 import { Badge } from "../../../components/ui/badge"
 import { Checkbox } from "../../../components/ui/checkbox"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -14,13 +15,6 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "../../../components/ui/dropdown-menu"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../../../components/ui/tooltip"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
 import { CreateChainDialog } from "../dialogs/CreateChainDialog"
 import { DeleteChainDialog } from "../dialogs/DeleteChainDialog"
 import { DeleteAllChainsDialog } from "../dialogs/DeleteAllChainsDialog"
@@ -41,7 +35,7 @@ export function ChainList() {
   const setSelectedChainId = useAppStore(s => s.setSelectedChainId)
   
   const [search, setSearch] = useState("")
-  const [sortKey, setSortKey] = useState<SortKey>("created_at")
+  const [sortKey, setSortKey] = useState<SortKey>("updated_at")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState("")
@@ -225,7 +219,7 @@ export function ChainList() {
           <div className="flex-1 flex items-center justify-center px-8">
             <div className="text-center space-y-4 max-w-md">
               <div className="flex justify-center">
-                <div className="rounded-full bg-muted p-6">
+                <div className="rounded-2xl bg-muted/50 p-6 ring-1 ring-border">
                   <Link className="h-12 w-12 text-muted-foreground" />
                 </div>
               </div>
@@ -262,73 +256,76 @@ export function ChainList() {
   }
 
   return (
-    <TooltipProvider>
-      <div className="h-full w-full flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="px-8 py-6 border-b space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight">Chains</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {chains.length} {chains.length === 1 ? 'chain' : 'chains'} total
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-              />
+    <div className="h-full w-full flex flex-col overflow-hidden bg-muted/5">
+      {/* Header */}
+      <div className="px-8 py-6 border-b bg-background space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Chains</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {chains.length} {chains.length === 1 ? 'chain' : 'chains'} total
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <Button 
+              onClick={() => fileInputRef.current?.click()} 
+              variant="outline"
+              size="sm"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
+            <Button 
+              onClick={handleExport} 
+              variant="outline"
+              size="sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            {chains.length > 0 && (
               <Button 
-                onClick={() => fileInputRef.current?.click()} 
+                onClick={() => setShowDeleteAll(true)} 
                 variant="outline"
+                size="sm"
+                className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Import
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete All
               </Button>
-              <Button 
-                onClick={handleExport} 
-                variant="outline"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              {chains.length > 0 && (
-                <Button 
-                  onClick={() => setShowDeleteAll(true)} 
-                  variant="outline"
-                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete All
-                </Button>
-              )}
-              <Button onClick={() => setShowCreate(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Chain
-              </Button>
-            </div>
+            )}
+            <Button onClick={() => setShowCreate(true)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Chain
+            </Button>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search chains..."
+              className="pl-9 h-9"
+            />
           </div>
 
-          {/* Search and Filters */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search chains..."
-                className="pl-9"
-              />
-            </div>
-
-            {allTags.length > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+             {allTags.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Filter className="h-4 w-4 mr-2" />
+                  <Button variant="outline" size="sm" className="h-9">
+                    <Filter className="h-3.5 w-3.5 mr-2" />
                     Tags
                     {selectedTags.length > 0 && (
                       <Badge variant="secondary" className="ml-2 h-5 px-1.5">
@@ -337,7 +334,7 @@ export function ChainList() {
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="max-h-72 overflow-auto">
@@ -355,7 +352,7 @@ export function ChainList() {
                           className="mr-2"
                           onCheckedChange={() => toggleTagFilter(tag)}
                         />
-                        <span className="flex-1">{tag}</span>
+                        <span className="flex-1 truncate">{tag}</span>
                       </DropdownMenuItem>
                     ))}
                   </div>
@@ -374,193 +371,153 @@ export function ChainList() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-
-            {selectedTags.length > 0 && (
-              <div className="flex items-center gap-2 flex-1">
-                <span className="text-xs text-muted-foreground">Active filters:</span>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {selectedTags.map(tag => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                      onClick={() => toggleTagFilter(tag)}
-                    >
-                      {tag}
-                      <X className="h-3 w-3 ml-1.5" />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Table */}
-        <ScrollArea className="flex-1">
-          <div className="px-8 py-4">
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-24">
-                      <Button 
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 -ml-3 font-medium hover:bg-transparent"
-                        onClick={() => toggleSort("id")}
-                      >
-                        ID
-                        <ArrowUpDown className={`ml-2 h-3.5 w-3.5 transition-opacity ${sortKey === "id" ? "opacity-100" : "opacity-40"}`} />
-                      </Button>
-                    </TableHead>
-                    <TableHead>
-                      <Button 
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 -ml-3 font-medium hover:bg-transparent"
-                        onClick={() => toggleSort("name")}
-                      >
-                        Name
-                        <ArrowUpDown className={`ml-2 h-3.5 w-3.5 transition-opacity ${sortKey === "name" ? "opacity-100" : "opacity-40"}`} />
-                      </Button>
-                    </TableHead>
-                    <TableHead className="w-64">Tags</TableHead>
-                    <TableHead className="w-48">
-                      <Button 
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 -ml-3 font-medium hover:bg-transparent"
-                        onClick={() => toggleSort("created_at")}
-                      >
-                        Created
-                        <ArrowUpDown className={`ml-2 h-3.5 w-3.5 transition-opacity ${sortKey === "created_at" ? "opacity-100" : "opacity-40"}`} />
-                      </Button>
-                    </TableHead>
-                    <TableHead className="w-48">
-                      <Button 
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 -ml-3 font-medium hover:bg-transparent"
-                        onClick={() => toggleSort("updated_at")}
-                      >
-                        Updated
-                        <ArrowUpDown className={`ml-2 h-3.5 w-3.5 transition-opacity ${sortKey === "updated_at" ? "opacity-100" : "opacity-40"}`} />
-                      </Button>
-                    </TableHead>
-                    <TableHead className="w-20">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSorted.map(chain => (
-                    <TableRow 
-                      key={chain.id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => handleSelect(chain.id)}
+        {selectedTags.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Active filters:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {selectedTags.map(tag => (
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                    onClick={() => toggleTagFilter(tag)}
+                  >
+                    {tag}
+                    <X className="h-3 w-3 ml-1.5" />
+                  </Badge>
+                ))}
+                <Button variant="ghost" size="sm" className="h-5 text-xs px-2" onClick={clearTagFilters}>
+                  Clear all
+                </Button>
+              </div>
+            </div>
+          )}
+      </div>
+
+      {/* Table Content */}
+      <ScrollArea className="flex-1 bg-background">
+        <div className="p-8">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[100px]">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleSort("id")}
                     >
-                      <TableCell className="font-mono text-sm text-muted-foreground">
-                        {chain.id.slice(0, 8)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {chain.name}
-                      </TableCell>
-                      <TableCell>
+                      ID
+                      <ArrowUpDown className={sortKey === "id" ? "ml-2 h-4 w-4 opacity-100" : "ml-2 h-4 w-4 opacity-0"} />
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleSort("name")}
+                    >
+                      Name
+                      <ArrowUpDown className={sortKey === "name" ? "ml-2 h-4 w-4 opacity-100" : "ml-2 h-4 w-4 opacity-0"} />
+                    </Button>
+                  </TableHead>
+                  <TableHead>Tags</TableHead>
+                  <TableHead className="w-[180px]">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleSort("updated_at")}
+                    >
+                      Last Updated
+                      <ArrowUpDown className={sortKey === "updated_at" ? "ml-2 h-4 w-4 opacity-100" : "ml-2 h-4 w-4 opacity-0"} />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[180px]">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleSort("created_at")}
+                    >
+                      Created
+                      <ArrowUpDown className={sortKey === "created_at" ? "ml-2 h-4 w-4 opacity-100" : "ml-2 h-4 w-4 opacity-0"} />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSorted.map(chain => (
+                  <TableRow 
+                    key={chain.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors group"
+                    onClick={() => handleSelect(chain.id)}
+                  >
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {chain.id.slice(0, 8)}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {chain.name}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1.5">
                         {chain.tags && chain.tags.length > 0 ? (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {chain.tags.slice(0, 3).map((tag, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                            {chain.tags.length > 3 && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="outline" className="text-xs cursor-help">
-                                    +{chain.tags.length - 3}
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <div className="flex flex-wrap gap-1 max-w-xs">
-                                    {chain.tags.slice(3).map((tag, idx) => (
-                                      <Badge key={idx} variant="secondary" className="text-xs">
-                                        {tag}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
+                          chain.tags.slice(0, 3).map((tag, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 h-5">
+                              {tag}
+                            </Badge>
+                          ))
                         ) : (
                           <span className="text-xs text-muted-foreground italic">No tags</span>
                         )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-2 cursor-help">
-                              <Clock className="h-3.5 w-3.5" />
-                              <span>{formatDistanceToNow(new Date(chain.created_at), { addSuffix: true })}</span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">{new Date(chain.created_at).toLocaleString()}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-2 cursor-help">
-                              <Clock className="h-3.5 w-3.5" />
-                              <span>{formatDistanceToNow(new Date(chain.updated_at), { addSuffix: true })}</span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">{new Date(chain.updated_at).toLocaleString()}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setDeleteConfirm(chain.id)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete chain</span>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                        {chain.tags && chain.tags.length > 3 && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 h-5">
+                             +{chain.tags.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                       <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5" />
+                          {formatDistanceToNow(new Date(chain.updated_at), { addSuffix: true })}
+                       </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                       {new Date(chain.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteConfirm(chain.id)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        </ScrollArea>
-        
-        {/* Footer */}
-        <div className="border-t px-8 py-4 flex items-center justify-between text-sm text-muted-foreground">
-          <div>
-            Showing <span className="font-medium text-foreground">{filteredSorted.length}</span> of{" "}
-            <span className="font-medium text-foreground">{chains.length}</span> chains
-          </div>
-          {selectedTags.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearTagFilters}
-              className="text-xs"
-            >
-              Clear filters
-            </Button>
-          )}
+        </div>
+      </ScrollArea>
+      
+      {/* Footer */}
+      <div className="border-t px-8 py-3 flex items-center justify-between text-xs text-muted-foreground bg-background">
+        <div>
+          Showing <span className="font-medium text-foreground">{filteredSorted.length}</span> of{" "}
+          <span className="font-medium text-foreground">{chains.length}</span> chains
         </div>
       </div>
 
@@ -587,6 +544,6 @@ export function ChainList() {
         onCancel={() => setShowDeleteAll(false)}
         isPending={isDeletingAll}
       />
-    </TooltipProvider>
+    </div>
   )
 }

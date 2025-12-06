@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
-import { Plus, X, Check, Edit2, Trash2, AlertTriangle, GitBranch } from "lucide-react"
+import { Plus, Check, Edit2, Trash2, AlertTriangle, GitBranch } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DeclarativeCheckExtractor } from "../extractors/DeclarativeCheckExtractor"
 import { CheckDisplay } from "./CheckDisplay"
@@ -11,6 +10,7 @@ import { useActiveStep } from "@/features/editor/hooks/useActiveStep"
 import type { DeclarativeCheck, ConditionOperator } from "@/types/schema"
 import { ConditionOperator as ConditionOperatorEnum } from "@/types/schema"
 import { DeclarativeOperator as DeclarativeOperatorEnum } from "@/types/schema"
+import { Badge } from "@/components/ui/badge"
 
 export function ConditionsEditor() {
   const step = useActiveStep()
@@ -136,30 +136,31 @@ export function ConditionsEditor() {
   const isValid = currentCheck.variable_name && currentCheck.variable_name.trim() !== ""
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between pb-2 border-b">
         <div className="flex items-center gap-2">
-          <GitBranch className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium">Conditions</h3>
+          <GitBranch className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Conditions</h3>
           {checks.length > 0 && (
-            <span className="text-xs text-muted-foreground">({checks.length} check{checks.length !== 1 ? 's' : ''})</span>
+             <Badge variant="secondary" className="text-xs">{checks.length} check{checks.length !== 1 ? 's' : ''}</Badge>
           )}
         </div>
         {!isFormVisible && (
           <Button
             size="sm"
-            variant="outline"
+            variant="ghost"
             onClick={handleStartAdd}
             disabled={disabled}
+            className="h-8 text-xs hover:bg-primary/10 hover:text-primary"
           >
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            <Plus className="h-3 w-3 mr-1.5" />
             Add Check
           </Button>
         )}
       </div>
 
       {invalidVariables.length > 0 && (
-        <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-900">
+        <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-900 animate-in fade-in">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
           <div>
             <p className="font-medium">Invalid variables in conditions:</p>
@@ -171,96 +172,96 @@ export function ConditionsEditor() {
         </div>
       )}
 
-      {/* Operator selector - show if there are checks or form is visible */}
+      {/* Operator selector */}
       {(checks.length > 0 || isFormVisible) && (
-        <div className="space-y-2">
-          <Label>Operator</Label>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Logic:</span>
           <Select 
             value={operator} 
             onValueChange={(v) => handleOperatorChange(v as ConditionOperator)} 
             disabled={disabled || isFormVisible}
           >
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-32 h-8 text-xs border-0 bg-muted/50 hover:bg-muted focus:ring-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ConditionOperatorEnum.AND}>AND (all checks must pass)</SelectItem>
-              <SelectItem value={ConditionOperatorEnum.OR}>OR (any check must pass)</SelectItem>
+              <SelectItem value={ConditionOperatorEnum.AND}>AND (All)</SelectItem>
+              <SelectItem value={ConditionOperatorEnum.OR}>OR (Any)</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">
-            {operator === ConditionOperatorEnum.AND 
-              ? "All checks must pass for the condition to be true"
-              : "At least one check must pass for the condition to be true"}
-          </p>
         </div>
       )}
 
       {isFormVisible && (
-        <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium">{editingIndex !== null ? "Edit Check" : "Add New Check"}</h4>
-            <Button size="icon" variant="ghost" onClick={handleCancel} disabled={disabled} className="h-8 w-8">
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+        <div className="animate-in slide-in-from-top-2 duration-200 space-y-4 py-2">
+           <div className="flex items-center justify-between">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {editingIndex !== null ? "Edit Check" : "New Check"}
+              </h4>
+            </div>
 
-          <DeclarativeCheckExtractor
-            value={currentCheck}
-            onChange={setCurrentCheck}
-            disabled={disabled}
-            showPath={false}
-            showVariable={true}
-            availableVariables={stepDependencies}
-          />
+            <div className="pl-1">
+              <DeclarativeCheckExtractor
+                value={currentCheck}
+                onChange={setCurrentCheck}
+                disabled={disabled}
+                showPath={false}
+                showVariable={true}
+                availableVariables={stepDependencies}
+              />
+            </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleCancel} disabled={disabled}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={disabled || !isValid}
-            >
-              <Check className="h-3.5 w-3.5 mr-1.5" />
-              {editingIndex !== null ? "Save Changes" : "Add Check"}
-            </Button>
-          </div>
+            <div className="flex justify-end gap-2 pt-2 border-t mt-4 border-dashed">
+              <Button variant="ghost" onClick={handleCancel} disabled={disabled} size="sm" className="h-7 text-xs">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={disabled || !isValid}
+                size="sm"
+                className="h-7 text-xs"
+              >
+                <Check className="h-3 w-3 mr-1.5" />
+                {editingIndex !== null ? "Update" : "Add"}
+              </Button>
+            </div>
         </div>
       )}
 
       {/* Checks List */}
-      {checks.length === 0 && !isFormVisible ? (
-        <div className="text-center py-8 border border-dashed rounded-lg text-sm text-muted-foreground">
-          No conditions yet. Click "Add Check" to create one.
-        </div>
-      ) : (
-        checks.length > 0 && (
-          <div className="space-y-2">
+      {!isFormVisible && (
+        checks.length === 0 ? (
+           <div className="flex flex-col items-center justify-center py-10 border border-dashed rounded-lg bg-muted/5">
+            <GitBranch className="h-8 w-8 text-muted-foreground/30 mb-2" />
+            <p className="text-sm font-medium text-muted-foreground">No conditions configured</p>
+            <p className="text-xs text-muted-foreground/70">Add checks to conditionally execute this step</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
             {checks.map((check, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 border rounded-lg bg-card"
+              <div 
+                key={index} 
+                className="group flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
               >
                 <div className="flex-1 min-w-0">
                   <CheckDisplay check={check} />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8"
+                    className="h-7 w-7"
                     onClick={() => handleStartEdit(index)}
-                    disabled={disabled || isFormVisible}
+                    disabled={disabled}
                   >
                     <Edit2 className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => handleDelete(index)}
-                    disabled={disabled || isFormVisible}
+                    disabled={disabled}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>

@@ -23,7 +23,7 @@ function StepItem({
 
   return (
     <div
-      className="group grid w-full grid-cols-[auto_1fr_auto] cursor-pointer items-center gap-3 rounded-lg border bg-card px-3 py-2.5 hover:bg-accent"
+      className="group grid w-full grid-cols-[auto_1fr_auto] cursor-pointer items-center gap-3 rounded-lg border bg-card px-3 py-2.5 hover:bg-accent transition-colors"
       onClick={onSelect}
     >
       {faviconUrl && !faviconError ? (
@@ -38,14 +38,14 @@ function StepItem({
       )}
       <div className="min-w-0">
         <p className="text-sm font-medium truncate">{step.name}</p>
-        <p className="text-xs text-muted-foreground truncate">
-          {step.request.request_method} {step.request.request_url || "(no url)"}
+        <p className="text-xs text-muted-foreground truncate font-mono">
+          {step.request.request_method} <span className="opacity-70">{step.request.request_url || "(no url)"}</span>
         </p>
       </div>
       <Button
         size="icon"
         variant="ghost"
-        className="h-7 w-7 opacity-0 group-hover:opacity-100"
+        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => {
           e.stopPropagation()
           onRemove()
@@ -85,18 +85,18 @@ export function NodeList() {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Variables */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
-              <Variable className="h-4 w-4 text-muted-foreground" />
-              <h4 className="text-sm font-medium">Variables</h4>
+              <Variable className="h-4 w-4 text-primary" />
+              <h4 className="text-sm font-semibold">Variables</h4>
             </div>
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs"
+              className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
               onClick={() => setShowInputDialog(true)}
               disabled={isSaving}
             >
@@ -106,21 +106,23 @@ export function NodeList() {
           </div>
 
           {hasVariables ? (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {workflow.chain_variables.map((variable) => (
                 <div
                   key={`input-${variable}`}
-                  className="group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border bg-card px-3 py-2.5 hover:bg-accent"
+                  className="group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border bg-card px-3 py-2.5 hover:bg-accent transition-colors"
                 >
-                  <Variable className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center justify-center w-6 h-6 rounded bg-primary/10 text-primary">
+                    <Variable className="h-3.5 w-3.5" />
+                  </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{variable}</p>
-                    <p className="text-xs text-muted-foreground">Input variable</p>
+                    <p className="text-sm font-medium truncate font-mono">{variable}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Global Input</p>
                   </div>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => removeInputVariable(variable)}
                     disabled={isSaving}
                   >
@@ -130,23 +132,34 @@ export function NodeList() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 px-3 text-sm text-muted-foreground">
-              No variables yet
+            <div className="flex flex-col items-center justify-center py-8 border border-dashed rounded-lg bg-muted/5">
+              <div className="p-2 rounded-full bg-muted/20 mb-2">
+                <Variable className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <p className="text-xs font-medium text-muted-foreground">No variables</p>
+              <Button 
+                variant="link" 
+                size="sm" 
+                className="h-auto p-0 text-[10px] text-primary mt-1"
+                onClick={() => setShowInputDialog(true)}
+              >
+                Add variable
+              </Button>
             </div>
           )}
         </div>
 
         {/* Steps */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
-              <Boxes className="h-4 w-4 text-muted-foreground" />
-              <h4 className="text-sm font-medium">Steps</h4>
+              <Boxes className="h-4 w-4 text-primary" />
+              <h4 className="text-sm font-semibold">Steps</h4>
             </div>
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs"
+              className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
               onClick={handleAddStep}
               disabled={isSaving || isAddingStep}
             >
@@ -160,7 +173,7 @@ export function NodeList() {
           </div>
 
           {hasSteps ? (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {workflow.steps.map((step) => {
                 const faviconUrl = getStepFaviconUrl(step.request.request_url)
                 return (
@@ -176,8 +189,19 @@ export function NodeList() {
               })}
             </div>
           ) : (
-            <div className="text-center py-6 px-3 text-sm text-muted-foreground">
-              No steps yet
+            <div className="flex flex-col items-center justify-center py-8 border border-dashed rounded-lg bg-muted/5">
+              <div className="p-2 rounded-full bg-muted/20 mb-2">
+                <Boxes className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <p className="text-xs font-medium text-muted-foreground">No steps defined</p>
+              <Button 
+                variant="link" 
+                size="sm" 
+                className="h-auto p-0 text-[10px] text-primary mt-1"
+                onClick={handleAddStep}
+              >
+                Add first step
+              </Button>
             </div>
           )}
         </div>
