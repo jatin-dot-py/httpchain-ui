@@ -31,24 +31,37 @@ export function FlowCanvas() {
         elementsSelectable={true}
         fitView
         colorMode={theme}
-        className="bg-background"
+        proOptions={{ hideAttribution: true }}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          style: { strokeWidth: 2 }
+        }}
       >
         <Background 
-          variant={BackgroundVariant.Lines} 
+          variant={BackgroundVariant.Dots} 
           gap={24} 
-          size={1} 
-          className="opacity-[0.15]"
+          size={1.5}
+          color="var(--canvas-dots)"
+          className="!bg-canvas"
         />
-        <Controls />
-        <MiniMap nodeColor={(node) => {
-          if (node.type === "inputVariable") return "green"
-          if (node.type === "step") return "blue"
-          if (node.type === "extractor") return "green"
-          if (node.type === "condition") return "yellow"
-          return "gray"
-        }} />
+        <Controls 
+          showInteractive={false}
+          className="!shadow-lg !border !border-border !rounded-lg !overflow-hidden"
+        />
+        <MiniMap 
+          nodeColor={(node) => {
+            if (node.type === "inputVariable") return "rgb(16 185 129)" // emerald-500
+            if (node.type === "step") return "var(--primary)"
+            if (node.type === "extractor") return "rgb(16 185 129)" // emerald-500
+            if (node.type === "condition") return "rgb(245 158 11)" // amber-500
+            return "var(--muted-foreground)"
+          }}
+          maskColor="rgba(0, 0, 0, 0.08)"
+          className="!shadow-lg !border !border-border !rounded-lg !overflow-hidden !bg-card"
+          pannable
+          zoomable
+        />
       </ReactFlow>
     </div>
   )
 }
-

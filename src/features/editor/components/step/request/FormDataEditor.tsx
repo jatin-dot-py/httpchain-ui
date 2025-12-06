@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react"
-import { Edit2, Check, FileText } from "lucide-react"
+import { Edit2, Check, Code2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SmartTextareaField } from "../shared/SmartTextareaField"
 import { useAppStore } from "@/store"
@@ -168,8 +168,8 @@ export function FormDataEditor() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full min-h-[80px] text-muted-foreground gap-2">
-                 <FileText className="h-5 w-5 opacity-50" />
-                 <span className="text-xs">No body configured</span>
+                 <Code2 className="h-5 w-5 opacity-50" />
+                 <span className="text-xs">No data configured</span>
               </div>
             )}
           </div>

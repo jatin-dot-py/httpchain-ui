@@ -3,7 +3,6 @@ import { Handle, Position } from "@xyflow/react"
 import { Variable } from "lucide-react"
 import { NodeStatusBadge, type NodeStatus } from "./NodeStatusBadge"
 import type { Extractor } from "@/types/schema"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 export interface ExtractorNodeData {
@@ -25,36 +24,40 @@ export const ExtractorNode = memo(({ data, selected: reactFlowSelected }: Extrac
 
   return (
     <div className="relative group">
-      <Card 
+      <div 
         className={cn(
-          "min-w-[180px] max-w-[240px] border-2 transition-all duration-300",
-          isSelected ? "border-emerald-500 shadow-lg ring-1 ring-emerald-500" : "hover:border-emerald-500/50"
+          "min-w-[180px] max-w-[240px] rounded-xl bg-card transition-all duration-200 cursor-pointer",
+          "border-2 shadow-md hover:shadow-lg",
+          isSelected 
+            ? "border-primary shadow-lg ring-2 ring-primary/20" 
+            : "border-node-border hover:border-node-border-hover"
         )}
         onClick={onSelect}
       >
-        <CardHeader className="flex flex-row items-center space-y-0 p-3 gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+        <div className="flex items-center p-3 gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
             <Variable className="w-4 h-4" />
           </div>
-          <CardTitle className="text-sm font-medium leading-none truncate flex-1 font-mono">
+          <p className="text-sm font-medium leading-none truncate flex-1 font-mono">
             {extractor.extractor_key}
-          </CardTitle>
+          </p>
           <NodeStatusBadge status={status} color="" />
-        </CardHeader>
+        </div>
+      </div>
 
-        <Handle
-          type="target"
-          position={Position.Left}
-          isConnectable={true}
-          className="w-3 h-3 !bg-muted-foreground !border-2 !border-background"
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          isConnectable={true}
-          className="w-3 h-3 !bg-muted-foreground !border-2 !border-background"
-        />
-      </Card>
+      {/* Handles */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        isConnectable={true}
+        className="!w-3 !h-3 !bg-primary !border-2 !border-card"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        isConnectable={true}
+        className="!w-3 !h-3 !bg-primary !border-2 !border-card"
+      />
     </div>
   )
 })

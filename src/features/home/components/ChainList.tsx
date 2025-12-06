@@ -256,9 +256,9 @@ export function ChainList() {
   }
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden bg-muted/5">
+    <div className="h-full w-full flex flex-col overflow-hidden bg-background">
       {/* Header */}
-      <div className="px-8 py-6 border-b bg-background space-y-4">
+      <div className="px-8 py-6 border-b border-border bg-card space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight">Chains</h2>
@@ -398,9 +398,9 @@ export function ChainList() {
       </div>
 
       {/* Table Content */}
-      <ScrollArea className="flex-1 bg-background">
+      <ScrollArea className="flex-1 scrollbar-thin">
         <div className="p-8">
-          <div className="rounded-md border">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -514,7 +514,7 @@ export function ChainList() {
       </ScrollArea>
       
       {/* Footer */}
-      <div className="border-t px-8 py-3 flex items-center justify-between text-xs text-muted-foreground bg-background">
+      <div className="border-t border-border px-8 py-3 flex items-center justify-between text-xs text-muted-foreground bg-card">
         <div>
           Showing <span className="font-medium text-foreground">{filteredSorted.length}</span> of{" "}
           <span className="font-medium text-foreground">{chains.length}</span> chains

@@ -9,13 +9,15 @@ interface SimpleJSONEditorProps {
   onUpdate: (data: Record<string, any> | null) => void
   disabled?: boolean
   availableVariables?: string[]
+  emptyMessage?: string
 }
 
 export function SimpleJSONEditor({ 
   data, 
   onUpdate, 
   disabled,
-  availableVariables = []
+  availableVariables = [],
+  emptyMessage = "No data configured"
 }: SimpleJSONEditorProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedText, setEditedText] = useState("")
@@ -162,7 +164,7 @@ export function SimpleJSONEditor({
             ) : (
               <div className="flex flex-col items-center justify-center h-full min-h-[80px] text-muted-foreground gap-2">
                  <Code2 className="h-5 w-5 opacity-50" />
-                 <span className="text-xs">No data configured</span>
+                 <span className="text-xs">{emptyMessage}</span>
               </div>
             )}
           </div>

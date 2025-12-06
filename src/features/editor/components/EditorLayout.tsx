@@ -18,10 +18,16 @@ export function EditorLayout({ onBack }: EditorLayoutProps) {
   }
 
   return (
-    <div className="h-full w-full flex">
-      <div className="w-[350px] shrink-0 h-full">
+    <div className="h-full w-full flex bg-canvas">
+      {/* Sidebar with shadow for depth */}
+      <div 
+        className="w-[320px] shrink-0 h-full relative z-10"
+        style={{ boxShadow: 'var(--sidebar-shadow)' }}
+      >
         <Sidebar onBack={onBack} />
       </div>
+      
+      {/* Canvas area */}
       <div className="flex-1 min-w-0 h-full relative">
         <FlowCanvas />
       </div>
@@ -33,4 +39,3 @@ export function EditorLayout({ onBack }: EditorLayoutProps) {
     </div>
   )
 }
-

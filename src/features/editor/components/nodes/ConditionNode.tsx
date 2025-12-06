@@ -4,7 +4,6 @@ import { GitBranch } from "lucide-react"
 import { NodeStatusBadge, type NodeStatus } from "./NodeStatusBadge"
 import type { ConditionalLogic } from "@/types/schema"
 import { ConditionOperator as ConditionOperatorEnum } from "@/types/schema"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 export interface ConditionNodeData {
@@ -27,42 +26,45 @@ export const ConditionNode = memo(({ data, selected: reactFlowSelected }: Condit
 
   return (
     <div className="relative group">
-      <Card 
+      <div 
         className={cn(
-          "w-48 border-2 transition-all duration-300",
-          isSelected ? "border-amber-500 shadow-lg ring-1 ring-amber-500" : "hover:border-amber-500/50"
+          "w-48 rounded-xl bg-card transition-all duration-200 cursor-pointer",
+          "border-2 shadow-md hover:shadow-lg",
+          isSelected 
+            ? "border-primary shadow-lg ring-2 ring-primary/20" 
+            : "border-node-border hover:border-node-border-hover"
         )}
         onClick={onSelect}
       >
-        <CardHeader className="flex flex-row items-center space-y-0 p-3 gap-3 justify-center">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+        <div className="flex items-center p-3 gap-3 justify-center">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
             <GitBranch className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
-            <CardTitle className="text-sm font-medium leading-none">
+            <p className="text-sm font-semibold leading-none">
               Condition
-            </CardTitle>
-            <span className="text-xs text-muted-foreground font-mono mt-1">
+            </p>
+            <span className="text-[11px] text-muted-foreground font-mono mt-1">
               {operatorText}
             </span>
           </div>
           <NodeStatusBadge status={status} color="" />
-        </CardHeader>
-        
-        {/* Handles */}
-        <Handle
-          type="target"
-          position={Position.Top}
-          isConnectable={true}
-          className="w-3 h-3 !bg-muted-foreground !border-2 !border-background"
-        />
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          isConnectable={true}
-          className="w-3 h-3 !bg-muted-foreground !border-2 !border-background"
-        />
-      </Card>
+        </div>
+      </div>
+      
+      {/* Handles */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        isConnectable={true}
+        className="!w-3 !h-3 !bg-primary !border-2 !border-card"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        isConnectable={true}
+        className="!w-3 !h-3 !bg-primary !border-2 !border-card"
+      />
     </div>
   )
 })

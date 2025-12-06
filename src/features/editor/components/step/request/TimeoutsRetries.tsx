@@ -158,40 +158,20 @@ export function TimeoutsRetries() {
     const isEditing = editingField === field
     const fieldError = isEditing && error ? error : null
 
-    return (
-      <div className="flex items-center gap-2">
-        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-16 shrink-0">
-          {label}
-        </Label>
-        {isEditing ? (
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                value={editedValue}
-                onChange={(e) => {
-                  setEditedValue(e.target.value)
-                  setError(null) // Clear error on input change
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSave(field)
-                  if (e.key === "Escape") handleCancel()
-                }}
-                min={config.min}
-                max={config.max}
-                className={`h-7 text-xs flex-1 ${fieldError ? "border-destructive" : ""}`}
-                autoFocus
-                disabled={disabled}
-              />
-              {showUnit && (
-                <span className="text-[10px] text-muted-foreground shrink-0">{unit}</span>
-              )}
+    if (isEditing) {
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {label}
+            </Label>
+            <div className="flex items-center gap-0.5">
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={() => handleSave(field)}
                 disabled={disabled || !!fieldError || !editedValue.trim()}
-                className="h-7 w-7 shrink-0"
+                className="h-6 w-6"
               >
                 <Check className="h-3.5 w-3.5" />
               </Button>
@@ -200,47 +180,71 @@ export function TimeoutsRetries() {
                 variant="ghost"
                 onClick={handleCancel}
                 disabled={disabled}
-                className="h-7 w-7 shrink-0"
+                className="h-6 w-6"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>
-            {fieldError && (
-              <p className="text-[10px] text-destructive px-1">{fieldError}</p>
-            )}
           </div>
-        ) : (
-          <div className="flex items-center gap-1 group flex-1">
-            <span className="text-xs font-mono">{currentValue}</span>
-            {showUnit && (
-              <span className="text-[10px] text-muted-foreground">{unit}</span>
-            )}
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-              onClick={() => handleStartEdit(field, currentValue)}
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={editedValue}
+              onChange={(e) => {
+                setEditedValue(e.target.value)
+                setError(null)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSave(field)
+                if (e.key === "Escape") handleCancel()
+              }}
+              min={config.min}
+              max={config.max}
+              className={`h-8 text-sm ${fieldError ? "border-destructive" : ""}`}
+              autoFocus
               disabled={disabled}
-            >
-              <Edit2 className="h-3 w-3" />
-            </Button>
+            />
+            {showUnit && (
+              <span className="text-xs text-muted-foreground shrink-0">{unit}</span>
+            )}
           </div>
-        )}
+          {fieldError && (
+            <p className="text-[10px] text-destructive">{fieldError}</p>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-16 shrink-0">
+          {label}
+        </Label>
+        <div className="flex items-center gap-1 group flex-1">
+          <span className="text-xs font-mono">{currentValue}</span>
+          {showUnit && (
+            <span className="text-[10px] text-muted-foreground">{unit}</span>
+          )}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            onClick={() => handleStartEdit(field, currentValue)}
+            disabled={disabled}
+          >
+            <Edit2 className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        {renderEditableField('connect', 'Connect', 'ms')}
-        {renderEditableField('read', 'Read', 'ms')}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {renderEditableField('retries', 'Retries', '', false)}
-        {renderEditableField('delay', 'Delay', 'ms')}
-      </div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {renderEditableField('connect', 'Connect', 'ms')}
+      {renderEditableField('read', 'Read', 'ms')}
+      {renderEditableField('retries', 'Retries', '', false)}
+      {renderEditableField('delay', 'Delay', 'ms')}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Edit2, Check, X, Loader2, Plus, Clock, Workflow } from "lucide-react"
+import { Edit2, Check, X, Loader2, Plus, Clock, Workflow, ChevronLeft } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -63,30 +63,30 @@ export function Sidebar({ onBack }: SidebarProps) {
 
   if (!workflow) {
     return (
-      <div className="h-full w-full border-r bg-background flex items-center justify-center">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      <div className="h-full w-full bg-sidebar flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   return (
-    <div className="h-full w-full border-r bg-background flex flex-col">
-      {/* Header */}
+    <div className="h-full w-full bg-sidebar border-r border-sidebar-border flex flex-col">
+      {/* Header Section */}
       <div className="p-4 space-y-4">
-        {/* Navigation & Name */}
-        <div className="flex items-center gap-2">
+        {/* Back Button & Name */}
+        <div className="flex items-center gap-3">
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 -ml-2 text-muted-foreground hover:text-foreground"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
             onClick={onBack}
           >
-            <X className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
           
           <div className="flex-1 min-w-0">
-             {isEditing ? (
-              <div className="flex items-center gap-1">
+            {isEditing ? (
+              <div className="flex items-center gap-2">
                 <Input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
@@ -94,7 +94,7 @@ export function Sidebar({ onBack }: SidebarProps) {
                     if (e.key === "Enter") handleSave()
                     if (e.key === "Escape") handleCancel()
                   }}
-                  className="h-8 text-sm"
+                  className="h-8 text-sm font-semibold"
                   autoFocus
                   disabled={isSaving}
                 />
@@ -119,14 +119,14 @@ export function Sidebar({ onBack }: SidebarProps) {
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
-                <h2 className="text-lg font-semibold truncate">{workflow.name}</h2>
+                <h2 className="text-lg font-semibold truncate tracking-tight">{workflow.name}</h2>
                 {isSaving ? (
-                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                 ) : (
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                     onClick={handleStartEdit}
                   >
                     <Edit2 className="h-3 w-3" />
@@ -138,7 +138,7 @@ export function Sidebar({ onBack }: SidebarProps) {
         </div>
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {chainTags && chainTags.map((tag, idx) => (
             <Badge
               key={idx}
@@ -147,16 +147,16 @@ export function Sidebar({ onBack }: SidebarProps) {
               onClick={() => handleRemoveTag(tag)}
             >
               {tag}
-              <X className="h-3 w-3 ml-1.5 opacity-50" />
+              <X className="h-3 w-3 ml-1 opacity-60" />
             </Badge>
           ))}
           
           {isAddingTag ? (
-            <div className="flex gap-1 items-center">
+            <div className="flex gap-1.5 items-center">
               <Input
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Tag..."
+                placeholder="Tag name..."
                 className="h-6 w-24 text-xs"
                 autoFocus
                 onKeyDown={(e) => {
@@ -197,33 +197,34 @@ export function Sidebar({ onBack }: SidebarProps) {
         {chainUpdatedAt && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
-            <span>Last edited {formatDistanceToNow(new Date(chainUpdatedAt), { addSuffix: true })}</span>
+            <span>Edited {formatDistanceToNow(new Date(chainUpdatedAt), { addSuffix: true })}</span>
           </div>
         )}
       </div>
 
       <Separator />
 
-      {/* Content */}
-      <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full">
-          <div className="p-4 space-y-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-1 rounded bg-muted">
-                <Workflow className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium">Structure</h3>
-                <p className="text-xs text-muted-foreground">
-                  {(workflow?.steps.length || 0) + (workflow?.chain_variables.length || 0)} nodes
-                </p>
-              </div>
-            </div>
-
-            <NodeList />
+      {/* Structure Section Header */}
+      <div className="px-4 py-3 bg-muted/30">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-md bg-primary/10">
+            <Workflow className="h-4 w-4 text-primary" />
           </div>
-        </ScrollArea>
+          <div>
+            <h3 className="text-sm font-semibold">Structure</h3>
+            <p className="text-[11px] text-muted-foreground">
+              {(workflow?.steps.length || 0) + (workflow?.chain_variables.length || 0)} nodes
+            </p>
+          </div>
+        </div>
       </div>
+
+      {/* Scrollable Content */}
+      <ScrollArea className="flex-1 scrollbar-thin">
+        <div className="p-4">
+          <NodeList />
+        </div>
+      </ScrollArea>
     </div>
   )
 }
