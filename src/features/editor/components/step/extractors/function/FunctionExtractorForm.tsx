@@ -4,7 +4,8 @@ import { RegisteredFunctionInput } from "./RegisteredFunctionInput"
 import { getDefaultTemplate, getAllLanguages } from "./languages"
 import type { FunctionExtractor, FunctionExtractorCode } from "@/types/schema"
 import type { FunctionLanguage, FunctionExtractorMode } from "./types"
-import { Code2, Package, Loader2 } from "lucide-react"
+import { Code2, Package } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Lazy load CodeEditor (contains CodeMirror which is heavy ~200-300KB)
 // Standard React.lazy pattern with default export
@@ -49,13 +50,13 @@ function FunctionExtractorForm({
 }: FunctionExtractorFormProps) {
   const [mode, setMode] = useState<FunctionExtractorMode>(() => getModeFromValue(value))
   const [language, setLanguage] = useState<FunctionLanguage>(() => getInitialLanguage(value.code))
-  
+
   const currentCode = getCodeForLanguage(value.code, language)
   const languages = getAllLanguages()
 
   const handleModeChange = useCallback((newMode: FunctionExtractorMode) => {
     setMode(newMode)
-    
+
     if (newMode === "registered") {
       onChange({
         registered_function_name: value.registered_function_name ?? "",
@@ -74,7 +75,7 @@ function FunctionExtractorForm({
 
   const handleLanguageChange = useCallback((newLanguage: FunctionLanguage) => {
     setLanguage(newLanguage)
-    
+
     if (mode === "inline") {
       const existingCode = getCodeForLanguage(value.code, newLanguage)
       if (!existingCode) {
@@ -178,10 +179,23 @@ function FunctionExtractorForm({
         />
       ) : (
         <Suspense fallback={
-          <div className="rounded-lg border h-[320px] flex items-center justify-center bg-muted/30">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Loading editor...</span>
+          <div className="rounded-lg border h-[320px] bg-muted/30 p-4 space-y-3">
+            {/* Language tabs skeleton */}
+            <div className="flex gap-1">
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-14" />
+              <Skeleton className="h-6 w-12" />
+            </div>
+            {/* Code lines skeleton */}
+            <div className="space-y-2 pt-2">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-4 w-2/5" />
+              <Skeleton className="h-4 w-3/5" />
             </div>
           </div>
         }>

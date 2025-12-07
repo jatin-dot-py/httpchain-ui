@@ -1,8 +1,9 @@
 import { memo } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { Variable } from "lucide-react"
+import { Braces, Code, FileJson, Regex } from "lucide-react"
 import { NodeStatusBadge, type NodeStatus } from "./NodeStatusBadge"
-import type { Extractor } from "@/types/schema"
+import type { Extractor, ExtractorType } from "@/types/schema"
+import { ExtractorType as ExtractorTypeEnum } from "@/types/schema"
 import { cn } from "@/lib/utils"
 
 export interface ExtractorNodeData {
@@ -18,31 +19,84 @@ interface ExtractorNodeProps {
   selected?: boolean
 }
 
+// Get icon and label for extractor type
+function getExtractorInfo(type: ExtractorType) {
+  switch (type) {
+    case ExtractorTypeEnum.JSONPATHARRAY:
+      return { icon: FileJson, label: "JSONPath" }
+    case ExtractorTypeEnum.REGEX:
+      return { icon: Regex, label: "Regex" }
+    case ExtractorTypeEnum.DECLARATIVE_CHECK:
+      return { icon: Braces, label: "Check" }
+    case ExtractorTypeEnum.FUNCTION:
+      return { icon: Code, label: "Function" }
+    default:
+      return { icon: Braces, label: "Extract" }
+  }
+}
+
 export const ExtractorNode = memo(({ data, selected: reactFlowSelected }: ExtractorNodeProps) => {
   const { extractor, onSelect, status = "normal", selected = false } = data
   const isSelected = selected || reactFlowSelected
+  const { icon: TypeIcon, label: typeLabel } = getExtractorInfo(extractor.extractor_type)
 
   return (
     <div className="relative group">
-      <div 
+      {/* Glow effect on hover/select */}
+      <div
         className={cn(
-          "min-w-[180px] max-w-[240px] rounded-xl bg-card transition-all duration-200 cursor-pointer",
-          "border-2 shadow-md hover:shadow-lg",
-          isSelected 
-            ? "border-primary shadow-lg ring-2 ring-primary/20" 
-            : "border-node-border hover:border-node-border-hover"
+          "absolute -inset-1 rounded-2xl opacity-0 blur-md transition-opacity duration-300",
+          "bg-gradient-to-r from-primary/30 via-primary/20 to-primary/30",
+          isSelected && "opacity-100",
+          "group-hover:opacity-60"
+        )}
+      />
+
+      <div
+        className={cn(
+          "relative min-w-[200px] max-w-[260px] rounded-xl transition-all duration-200 cursor-pointer overflow-hidden",
+          "border shadow-lg",
+          "bg-gradient-to-br from-card via-card to-primary/5",
+          "backdrop-blur-sm",
+          isSelected
+            ? "border-primary shadow-xl ring-2 ring-primary/30"
+            : "border-border/60 hover:border-primary/50 hover:shadow-xl"
         )}
         onClick={onSelect}
       >
-        <div className="flex items-center p-3 gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
-            <Variable className="w-4 h-4" />
+        {/* Top accent line */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
+        <div className="flex items-center p-4 gap-3">
+          {/* Icon with gradient - shows extractor type icon */}
+          <div className={cn(
+            "flex items-center justify-center w-10 h-10 rounded-xl",
+            "bg-gradient-to-br from-primary/15 to-primary/5",
+            "ring-1 ring-primary/20",
+            "shadow-inner"
+          )}>
+            <TypeIcon className="w-5 h-5 text-primary" />
           </div>
-          <p className="text-sm font-medium leading-none truncate flex-1 font-mono">
-            {extractor.extractor_key}
-          </p>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className={cn(
+                "px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider",
+                "bg-primary/10 text-primary"
+              )}>
+                {typeLabel}
+              </span>
+            </div>
+            <p className="text-sm font-semibold leading-tight truncate mt-1.5 font-mono text-card-foreground">
+              {extractor.extractor_key}
+            </p>
+          </div>
+
           <NodeStatusBadge status={status} color="" />
         </div>
+
+        {/* Visual indicator bar */}
+        <div className="h-1 bg-gradient-to-r from-primary/0 via-primary/15 to-primary/0" />
       </div>
 
       {/* Handles */}
@@ -50,13 +104,13 @@ export const ExtractorNode = memo(({ data, selected: reactFlowSelected }: Extrac
         type="target"
         position={Position.Left}
         isConnectable={true}
-        className="!w-3 !h-3 !bg-primary !border-2 !border-card"
+        className="!w-3 !h-3 !bg-primary !border-2 !border-card !shadow-md"
       />
       <Handle
         type="source"
         position={Position.Right}
         isConnectable={true}
-        className="!w-3 !h-3 !bg-primary !border-2 !border-card"
+        className="!w-3 !h-3 !bg-primary !border-2 !border-card !shadow-md"
       />
     </div>
   )

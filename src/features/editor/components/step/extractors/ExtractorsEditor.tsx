@@ -1,6 +1,7 @@
 import { useState, useMemo, lazy, Suspense } from "react"
-import { Edit2, Trash2, Filter, Check, Code, Regex, Braces, AlertCircle, Terminal, Loader2 } from "lucide-react"
+import { Edit2, Trash2, Filter, Check, Code, Regex, Braces, AlertCircle, Terminal } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DeclarativeCheckExtractor } from "./DeclarativeCheckExtractor"
@@ -71,7 +72,7 @@ export function ExtractorsEditor() {
     if (!extractorKey.trim()) return false
     return usedKeys.has(extractorKey.trim())
   }, [extractorKey, usedKeys])
-  
+
   const [declarativeCheck, setDeclarativeCheck] = useState<DeclarativeCheck>({
     path: [],
     operator: DeclarativeOperatorEnum.EXISTS,
@@ -83,7 +84,7 @@ export function ExtractorsEditor() {
   })
   const [jsonPathArray, setJsonPathArray] = useState<string[]>([])
   const [functionExtractor, setFunctionExtractor] = useState<FunctionExtractor>({})
-  
+
   // Validation ONLY for display and button control - NOT for editor control
   const functionCode = functionExtractor.code?.python ?? ""
   const functionValidation = useCodeValidation(functionCode, "python")
@@ -103,7 +104,7 @@ export function ExtractorsEditor() {
     setEditingIndex(index)
     setExtractorKey(extractor.extractor_key)
     setAddingType(extractor.extractor_type)
-    
+
     if (extractor.declarative_check_extractor) {
       setDeclarativeCheck(extractor.declarative_check_extractor)
     }
@@ -175,12 +176,12 @@ export function ExtractorsEditor() {
   }
 
   const isFormVisible = addingType !== null
-  
+
   // Check if function extractor is valid (validation hook controls button, not editor)
-  const isFunctionExtractorValid = 
-    functionExtractor.registered_function_name?.trim() || 
+  const isFunctionExtractorValid =
+    functionExtractor.registered_function_name?.trim() ||
     (functionExtractor.code && functionValidation.valid)
-  
+
   const isValid = extractorKey.trim() && !isDuplicate && addingType && (
     (addingType === ExtractorTypeEnum.DECLARATIVE_CHECK && declarativeCheck?.path && declarativeCheck.path.length > 0) ||
     (addingType === ExtractorTypeEnum.REGEX && regexExtractor?.path && regexExtractor.path.length > 0 && regexExtractor.pattern) ||
@@ -247,110 +248,120 @@ export function ExtractorsEditor() {
       {/* Inline Form */}
       {isFormVisible && (
         <div className="animate-in slide-in-from-top-2 duration-200 space-y-4 py-2">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                {editingIndex !== null ? "Edit Extractor" : "New Extractor"}
-              </h4>
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              {editingIndex !== null ? "Edit Extractor" : "New Extractor"}
+            </h4>
+          </div>
+
+          <div className="space-y-4 pl-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="extractor_key" className="text-xs font-medium text-muted-foreground">Variable Name (Key)</Label>
+              <Input
+                id="extractor_key"
+                value={extractorKey}
+                onChange={(e) => setExtractorKey(e.target.value)}
+                placeholder="e.g., user_id, token"
+                disabled={disabled}
+                className={cn("h-9 font-mono text-sm", isDuplicate ? "border-destructive" : "")}
+              />
+              {isDuplicate && (
+                <div className="flex items-center gap-2 text-[10px] text-destructive animate-in fade-in">
+                  <AlertCircle className="h-3 w-3" />
+                  <span>Key unavailable</span>
+                </div>
+              )}
             </div>
 
-            <div className="space-y-4 pl-1">
+            {addingType === ExtractorTypeEnum.DECLARATIVE_CHECK && (
               <div className="space-y-1.5">
-                <Label htmlFor="extractor_key" className="text-xs font-medium text-muted-foreground">Variable Name (Key)</Label>
-                <Input
-                  id="extractor_key"
-                  value={extractorKey}
-                  onChange={(e) => setExtractorKey(e.target.value)}
-                  placeholder="e.g., user_id, token"
+                <Label className="text-xs font-medium text-muted-foreground">Path Selection</Label>
+                <DeclarativeCheckExtractor
+                  value={declarativeCheck}
+                  onChange={setDeclarativeCheck}
                   disabled={disabled}
-                  className={cn("h-9 font-mono text-sm", isDuplicate ? "border-destructive" : "")}
+                  showPath={true}
+                  showVariable={false}
                 />
-                {isDuplicate && (
-                  <div className="flex items-center gap-2 text-[10px] text-destructive animate-in fade-in">
-                    <AlertCircle className="h-3 w-3" />
-                    <span>Key unavailable</span>
+              </div>
+            )}
+
+            {addingType === ExtractorTypeEnum.REGEX && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Regex Configuration</Label>
+                <RegexExtractorForm
+                  value={regexExtractor}
+                  onChange={setRegexExtractor}
+                  disabled={disabled}
+                />
+              </div>
+            )}
+
+            {addingType === ExtractorTypeEnum.JSONPATHARRAY && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">JSON Path Configuration</Label>
+                <JsonPathArrayExtractor
+                  value={jsonPathArray}
+                  onChange={setJsonPathArray}
+                  disabled={disabled}
+                />
+              </div>
+            )}
+
+            {addingType === ExtractorTypeEnum.FUNCTION && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Function Configuration</Label>
+                <Suspense fallback={
+                  <div className="rounded-lg border h-64 bg-muted/30 p-4 space-y-3">
+                    {/* Tabs skeleton */}
+                    <div className="flex gap-2">
+                      <Skeleton className="h-7 w-20" />
+                      <Skeleton className="h-7 w-24" />
+                    </div>
+                    {/* Code lines skeleton */}
+                    <div className="space-y-2 pt-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-4 w-5/6" />
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-4 w-4/5" />
+                    </div>
                   </div>
+                }>
+                  <FunctionExtractorForm
+                    value={functionExtractor}
+                    onChange={setFunctionExtractor}
+                    disabled={disabled}
+                  />
+                </Suspense>
+                {functionExtractor.code && (
+                  <ValidationStatus result={functionValidation} />
                 )}
               </div>
+            )}
 
-              {addingType === ExtractorTypeEnum.DECLARATIVE_CHECK && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Path Selection</Label>
-                  <DeclarativeCheckExtractor
-                    value={declarativeCheck}
-                    onChange={setDeclarativeCheck}
-                    disabled={disabled}
-                    showPath={true}
-                    showVariable={false}
-                  />
-                </div>
-              )}
-
-              {addingType === ExtractorTypeEnum.REGEX && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Regex Configuration</Label>
-                  <RegexExtractorForm
-                    value={regexExtractor}
-                    onChange={setRegexExtractor}
-                    disabled={disabled}
-                  />
-                </div>
-              )}
-
-              {addingType === ExtractorTypeEnum.JSONPATHARRAY && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">JSON Path Configuration</Label>
-                  <JsonPathArrayExtractor
-                    value={jsonPathArray}
-                    onChange={setJsonPathArray}
-                    disabled={disabled}
-                  />
-                </div>
-              )}
-
-              {addingType === ExtractorTypeEnum.FUNCTION && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Function Configuration</Label>
-                  <Suspense fallback={
-                    <div className="rounded-lg border h-64 flex items-center justify-center bg-muted/30">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Loading function editor...</span>
-                      </div>
-                    </div>
-                  }>
-                    <FunctionExtractorForm
-                      value={functionExtractor}
-                      onChange={setFunctionExtractor}
-                      disabled={disabled}
-                    />
-                  </Suspense>
-                  {functionExtractor.code && (
-                    <ValidationStatus result={functionValidation} />
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t mt-4 border-dashed">
-                <Button
-                  variant="ghost"
-                  onClick={handleCancel}
-                  disabled={disabled}
-                  size="sm"
-                  className="h-7 text-xs"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={disabled || !isValid}
-                  size="sm"
-                  className="h-7 text-xs"
-                >
-                  <Check className="h-3 w-3 mr-1.5" />
-                  {editingIndex !== null ? "Update" : "Add"}
-                </Button>
-              </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t mt-4 border-dashed">
+              <Button
+                variant="ghost"
+                onClick={handleCancel}
+                disabled={disabled}
+                size="sm"
+                className="h-7 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={disabled || !isValid}
+                size="sm"
+                className="h-7 text-xs"
+              >
+                <Check className="h-3 w-3 mr-1.5" />
+                {editingIndex !== null ? "Update" : "Add"}
+              </Button>
             </div>
+          </div>
         </div>
       )}
 
@@ -365,8 +376,8 @@ export function ExtractorsEditor() {
         ) : (
           <div className="space-y-1">
             {extractors.map((extractor, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="group flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
               >
                 <div className="flex-1 min-w-0 space-y-1">
@@ -409,22 +420,22 @@ export function ExtractorsEditor() {
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                    {extractor.extractor_type === ExtractorTypeEnum.JSONPATHARRAY && 
-                      extractor.jsonpatharray_extractor && 
+                    {extractor.extractor_type === ExtractorTypeEnum.JSONPATHARRAY &&
+                      extractor.jsonpatharray_extractor &&
                       <span className="font-mono">{extractor.jsonpatharray_extractor.join(" → ")}</span>}
-                    {extractor.extractor_type === ExtractorTypeEnum.REGEX && 
-                      extractor.regex_extractor && 
+                    {extractor.extractor_type === ExtractorTypeEnum.REGEX &&
+                      extractor.regex_extractor &&
                       <span className="font-mono">/{extractor.regex_extractor.pattern}/</span>}
-                    {extractor.extractor_type === ExtractorTypeEnum.DECLARATIVE_CHECK && 
+                    {extractor.extractor_type === ExtractorTypeEnum.DECLARATIVE_CHECK &&
                       extractor.declarative_check_extractor && (
                         <div className="flex items-center gap-1">
-                           <span className="font-mono">{extractor.declarative_check_extractor.operator}</span>
-                           {extractor.declarative_check_extractor.value !== undefined && (
+                          <span className="font-mono">{extractor.declarative_check_extractor.operator}</span>
+                          {extractor.declarative_check_extractor.value !== undefined && (
                             <ValueDisplay value={extractor.declarative_check_extractor.value} />
-                           )}
+                          )}
                         </div>
                       )}
-                    {extractor.extractor_type === ExtractorTypeEnum.FUNCTION && 
+                    {extractor.extractor_type === ExtractorTypeEnum.FUNCTION &&
                       extractor.function_extractor && (
                         <div className="flex items-center gap-1.5">
                           {extractor.function_extractor.registered_function_name ? (

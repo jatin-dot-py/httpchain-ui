@@ -2,11 +2,28 @@ import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
+import { viteStaticCopy } from "vite-plugin-static-copy"
 
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // Copy WASM files needed by curlconverter (tree-sitter)
+    viteStaticCopy({
+      targets: [
+        {
+          src: "node_modules/web-tree-sitter/tree-sitter.wasm",
+          dest: ".",
+        },
+        {
+          src: "node_modules/curlconverter/dist/tree-sitter-bash.wasm",
+          dest: ".",
+        },
+      ],
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -23,4 +40,3 @@ export default defineConfig({
     },
   },
 })
-
