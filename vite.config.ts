@@ -12,5 +12,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'codemirror': ['@uiw/react-codemirror', '@codemirror/lang-python', '@codemirror/theme-one-dark'],
+          'react-flow': ['@xyflow/react'],
+        },
+      },
+    },
+  },
 })
 

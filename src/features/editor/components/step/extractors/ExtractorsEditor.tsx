@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react"
-import { Edit2, Trash2, Filter, Check, Code, Regex, Braces, AlertCircle } from "lucide-react"
+import { useState, useMemo, lazy, Suspense } from "react"
+import { Edit2, Trash2, Filter, Check, Code, Regex, Braces, AlertCircle, Terminal, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -7,13 +7,21 @@ import { DeclarativeCheckExtractor } from "./DeclarativeCheckExtractor"
 import { RegexExtractorForm } from "./RegexExtractor"
 import { JsonPathArrayExtractor } from "./JsonPathArrayExtractor"
 import { ValueDisplay } from "./ValueDisplay"
+import { ValidationStatus } from "./function"
+
+// Lazy load FunctionExtractorForm (contains CodeMirror which is heavy ~200-300KB)
+// Standard React.lazy pattern with default export
+const FunctionExtractorForm = lazy(() => import("./function/FunctionExtractorForm"))
+import { getLanguageConfig } from "./function/languages"
 import { getForbiddenExtractorKeys } from "@/shared/utils/variables"
 import { useAppStore } from "@/store"
 import { useActiveStep } from "@/features/editor/hooks/useActiveStep"
-import type { Extractor, ExtractorType, DeclarativeCheck, RegexExtractor } from "@/types/schema"
+import { useCodeValidation } from "@/features/editor/hooks/useCodeValidation"
+import type { Extractor, ExtractorType, DeclarativeCheck, RegexExtractor, FunctionExtractor } from "@/types/schema"
 import { ExtractorType as ExtractorTypeEnum } from "@/types/schema"
 import { DeclarativeOperator as DeclarativeOperatorEnum } from "@/types/schema"
 import { Badge } from "@/components/ui/badge"
+import type { FunctionLanguage } from "./function/types"
 import { cn } from "@/lib/utils"
 
 type AddingType = ExtractorType | null
@@ -74,6 +82,11 @@ export function ExtractorsEditor() {
     find_all: false,
   })
   const [jsonPathArray, setJsonPathArray] = useState<string[]>([])
+  const [functionExtractor, setFunctionExtractor] = useState<FunctionExtractor>({})
+  
+  // Validation ONLY for display and button control - NOT for editor control
+  const functionCode = functionExtractor.code?.python ?? ""
+  const functionValidation = useCodeValidation(functionCode, "python")
 
   const handleStartAdd = (type: ExtractorType) => {
     setAddingType(type)
@@ -81,6 +94,7 @@ export function ExtractorsEditor() {
     setDeclarativeCheck({ path: [], operator: DeclarativeOperatorEnum.EXISTS })
     setRegexExtractor({ path: [], pattern: "", find_all: false })
     setJsonPathArray([])
+    setFunctionExtractor({})
     setEditingIndex(null)
   }
 
@@ -99,6 +113,9 @@ export function ExtractorsEditor() {
     if (extractor.jsonpatharray_extractor) {
       setJsonPathArray(extractor.jsonpatharray_extractor)
     }
+    if (extractor.function_extractor) {
+      setFunctionExtractor(extractor.function_extractor)
+    }
   }
 
   const handleCancel = () => {
@@ -108,6 +125,7 @@ export function ExtractorsEditor() {
     setDeclarativeCheck({ path: [], operator: DeclarativeOperatorEnum.EXISTS })
     setRegexExtractor({ path: [], pattern: "", find_all: false })
     setJsonPathArray([])
+    setFunctionExtractor({})
   }
 
   const handleSave = () => {
@@ -126,6 +144,8 @@ export function ExtractorsEditor() {
       newExtractor.regex_extractor = regexExtractor
     } else if (addingType === ExtractorTypeEnum.JSONPATHARRAY) {
       newExtractor.jsonpatharray_extractor = jsonPathArray
+    } else if (addingType === ExtractorTypeEnum.FUNCTION) {
+      newExtractor.function_extractor = functionExtractor
     }
 
     const updated = [...extractors]
@@ -155,10 +175,17 @@ export function ExtractorsEditor() {
   }
 
   const isFormVisible = addingType !== null
+  
+  // Check if function extractor is valid (validation hook controls button, not editor)
+  const isFunctionExtractorValid = 
+    functionExtractor.registered_function_name?.trim() || 
+    (functionExtractor.code && functionValidation.valid)
+  
   const isValid = extractorKey.trim() && !isDuplicate && addingType && (
     (addingType === ExtractorTypeEnum.DECLARATIVE_CHECK && declarativeCheck?.path && declarativeCheck.path.length > 0) ||
     (addingType === ExtractorTypeEnum.REGEX && regexExtractor?.path && regexExtractor.path.length > 0 && regexExtractor.pattern) ||
-    (addingType === ExtractorTypeEnum.JSONPATHARRAY && jsonPathArray && jsonPathArray.length > 0)
+    (addingType === ExtractorTypeEnum.JSONPATHARRAY && jsonPathArray && jsonPathArray.length > 0) ||
+    (addingType === ExtractorTypeEnum.FUNCTION && isFunctionExtractorValid)
   )
 
   return (
@@ -202,6 +229,16 @@ export function ExtractorsEditor() {
             >
               <Regex className="h-3 w-3 mr-1.5" />
               Regex
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleStartAdd(ExtractorTypeEnum.FUNCTION)}
+              disabled={disabled}
+              className="h-8 text-xs hover:bg-primary/10 hover:text-primary"
+            >
+              <Terminal className="h-3 w-3 mr-1.5" />
+              Function
             </Button>
           </div>
         )}
@@ -270,6 +307,29 @@ export function ExtractorsEditor() {
                 </div>
               )}
 
+              {addingType === ExtractorTypeEnum.FUNCTION && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Function Configuration</Label>
+                  <Suspense fallback={
+                    <div className="rounded-lg border h-64 flex items-center justify-center bg-muted/30">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading function editor...</span>
+                      </div>
+                    </div>
+                  }>
+                    <FunctionExtractorForm
+                      value={functionExtractor}
+                      onChange={setFunctionExtractor}
+                      disabled={disabled}
+                    />
+                  </Suspense>
+                  {functionExtractor.code && (
+                    <ValidationStatus result={functionValidation} />
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-2 pt-2 border-t mt-4 border-dashed">
                 <Button
                   variant="ghost"
@@ -312,9 +372,41 @@ export function ExtractorsEditor() {
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold font-mono text-primary">{extractor.extractor_key}</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider border-muted-foreground/30 text-muted-foreground">
-                      {extractor.extractor_type.replace('_', ' ')}
-                    </Badge>
+                    {extractor.extractor_type === ExtractorTypeEnum.FUNCTION && extractor.function_extractor ? (
+                      (() => {
+                        // Show language icon for function extractors
+                        if (extractor.function_extractor.registered_function_name) {
+                          return (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider border-muted-foreground/30 text-muted-foreground flex items-center gap-1">
+                              <Code className="h-2.5 w-2.5" />
+                              Plugin
+                            </Badge>
+                          )
+                        } else if (extractor.function_extractor.code) {
+                          const codeKeys = Object.keys(extractor.function_extractor.code) as FunctionLanguage[]
+                          const firstLang = codeKeys[0]
+                          if (firstLang) {
+                            const langConfig = getLanguageConfig(firstLang)
+                            const Icon = langConfig.icon
+                            return (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider border-muted-foreground/30 text-muted-foreground flex items-center gap-1">
+                                <Icon className="h-2.5 w-2.5" />
+                                {langConfig.displayName}
+                              </Badge>
+                            )
+                          }
+                        }
+                        return (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider border-muted-foreground/30 text-muted-foreground">
+                            Function
+                          </Badge>
+                        )
+                      })()
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider border-muted-foreground/30 text-muted-foreground">
+                        {extractor.extractor_type.replace('_', ' ')}
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                     {extractor.extractor_type === ExtractorTypeEnum.JSONPATHARRAY && 
@@ -330,6 +422,39 @@ export function ExtractorsEditor() {
                            {extractor.declarative_check_extractor.value !== undefined && (
                             <ValueDisplay value={extractor.declarative_check_extractor.value} />
                            )}
+                        </div>
+                      )}
+                    {extractor.extractor_type === ExtractorTypeEnum.FUNCTION && 
+                      extractor.function_extractor && (
+                        <div className="flex items-center gap-1.5">
+                          {extractor.function_extractor.registered_function_name ? (
+                            <>
+                              <Code className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="font-mono text-xs">
+                                {extractor.function_extractor.registered_function_name}()
+                              </span>
+                            </>
+                          ) : extractor.function_extractor.code ? (
+                            (() => {
+                              // Get the first language from code
+                              const codeKeys = Object.keys(extractor.function_extractor.code) as FunctionLanguage[]
+                              const firstLang = codeKeys[0]
+                              if (firstLang) {
+                                const langConfig = getLanguageConfig(firstLang)
+                                const Icon = langConfig.icon
+                                return (
+                                  <>
+                                    <Icon className="h-3.5 w-3.5" />
+                                    <span className="text-xs font-medium">
+                                      {langConfig.displayName}
+                                      {codeKeys.length > 1 && ` +${codeKeys.length - 1}`}
+                                    </span>
+                                  </>
+                                )
+                              }
+                              return null
+                            })()
+                          ) : null}
                         </div>
                       )}
                   </div>

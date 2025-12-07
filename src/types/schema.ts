@@ -27,6 +27,7 @@ export const ExtractorType = {
   JSONPATHARRAY: "jsonpatharray",
   REGEX: "regex",
   DECLARATIVE_CHECK: "declarative_check",
+  FUNCTION: "function",
 } as const
 
 export type ExtractorType = typeof ExtractorType[keyof typeof ExtractorType]
@@ -79,12 +80,27 @@ export interface RegexExtractor {
   find_all: boolean
 }
 
+export interface FunctionExtractorCode {
+  python?: string
+  go?: string
+  js?: string
+  rust?: string
+  c?: string
+  cpp?: string
+}
+
+export interface FunctionExtractor {
+  registered_function_name?: string
+  code?: FunctionExtractorCode
+}
+
 export interface Extractor {
   extractor_key: string
   extractor_type: ExtractorType
   declarative_check_extractor?: DeclarativeCheck
   jsonpatharray_extractor?: string[]
   regex_extractor?: RegexExtractor
+  function_extractor?: FunctionExtractor
 
   _extraction_status?: EvaluationStatus
 
