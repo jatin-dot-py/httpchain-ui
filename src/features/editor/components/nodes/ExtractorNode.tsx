@@ -1,6 +1,6 @@
 import { memo } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { Braces, Code, FileJson, Regex } from "lucide-react"
+import { Braces, Code, FileJson, Regex, Terminal } from "lucide-react"
 import { NodeStatusBadge, type NodeStatus } from "./NodeStatusBadge"
 import type { Extractor, ExtractorType } from "@/types/schema"
 import { ExtractorType as ExtractorTypeEnum } from "@/types/schema"
@@ -19,9 +19,9 @@ interface ExtractorNodeProps {
   selected?: boolean
 }
 
-// Get icon and label for extractor type
-function getExtractorInfo(type: ExtractorType) {
-  switch (type) {
+// Get icon and label for extractor - now takes full extractor for function type details
+function getExtractorInfo(extractor: Extractor): { icon: typeof Code, label: string } {
+  switch (extractor.extractor_type) {
     case ExtractorTypeEnum.JSONPATHARRAY:
       return { icon: FileJson, label: "JSONPath" }
     case ExtractorTypeEnum.REGEX:
@@ -29,7 +29,11 @@ function getExtractorInfo(type: ExtractorType) {
     case ExtractorTypeEnum.DECLARATIVE_CHECK:
       return { icon: Braces, label: "Check" }
     case ExtractorTypeEnum.FUNCTION:
-      return { icon: Code, label: "Function" }
+      // Registered function = Plugin, Code-based = Function (polyglot)
+      if (extractor.function_extractor?.registered_function_name) {
+        return { icon: Code, label: "Plugin" }
+      }
+      return { icon: Terminal, label: "Function" }
     default:
       return { icon: Braces, label: "Extract" }
   }
@@ -38,7 +42,7 @@ function getExtractorInfo(type: ExtractorType) {
 export const ExtractorNode = memo(({ data, selected: reactFlowSelected }: ExtractorNodeProps) => {
   const { extractor, onSelect, status = "normal", selected = false } = data
   const isSelected = selected || reactFlowSelected
-  const { icon: TypeIcon, label: typeLabel } = getExtractorInfo(extractor.extractor_type)
+  const { icon: TypeIcon, label: typeLabel } = getExtractorInfo(extractor)
 
   return (
     <div className="relative group">

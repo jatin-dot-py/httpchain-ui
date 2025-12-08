@@ -2,7 +2,7 @@ import { memo } from "react"
 import { Handle, Position } from "@xyflow/react"
 import { Globe, ArrowRight } from "lucide-react"
 import { NodeStatusBadge, type NodeStatus } from "./NodeStatusBadge"
-import type { Step, HTTPMethod } from "@/types/schema"
+import type { Step } from "@/types/schema"
 import { cn } from "@/lib/utils"
 
 export interface StepNodeData {
@@ -15,45 +15,6 @@ export interface StepNodeData {
 interface StepNodeProps {
   data: StepNodeData
   selected?: boolean
-}
-
-// Method badge colors - vibrant but professional
-const METHOD_STYLES: Record<HTTPMethod, { bg: string; text: string; glow: string }> = {
-  GET: {
-    bg: "bg-emerald-500/15 dark:bg-emerald-500/20",
-    text: "text-emerald-600 dark:text-emerald-400",
-    glow: "shadow-emerald-500/20"
-  },
-  POST: {
-    bg: "bg-amber-500/15 dark:bg-amber-500/20",
-    text: "text-amber-600 dark:text-amber-400",
-    glow: "shadow-amber-500/20"
-  },
-  PUT: {
-    bg: "bg-blue-500/15 dark:bg-blue-500/20",
-    text: "text-blue-600 dark:text-blue-400",
-    glow: "shadow-blue-500/20"
-  },
-  DELETE: {
-    bg: "bg-rose-500/15 dark:bg-rose-500/20",
-    text: "text-rose-600 dark:text-rose-400",
-    glow: "shadow-rose-500/20"
-  },
-  PATCH: {
-    bg: "bg-violet-500/15 dark:bg-violet-500/20",
-    text: "text-violet-600 dark:text-violet-400",
-    glow: "shadow-violet-500/20"
-  },
-  HEAD: {
-    bg: "bg-slate-500/15 dark:bg-slate-500/20",
-    text: "text-slate-600 dark:text-slate-400",
-    glow: "shadow-slate-500/20"
-  },
-  OPTIONS: {
-    bg: "bg-slate-500/15 dark:bg-slate-500/20",
-    text: "text-slate-600 dark:text-slate-400",
-    glow: "shadow-slate-500/20"
-  },
 }
 
 // Extract domain from URL for display
@@ -72,7 +33,6 @@ export const StepNode = memo(({ data, selected: reactFlowSelected }: StepNodePro
   const { step, onSelect, status = "normal", selected = false } = data
   const isSelected = selected || reactFlowSelected
   const method = step.request.request_method
-  const methodStyle = METHOD_STYLES[method]
   const domain = extractDomain(step.request.request_url)
 
   return (
@@ -91,7 +51,6 @@ export const StepNode = memo(({ data, selected: reactFlowSelected }: StepNodePro
         className={cn(
           "relative w-72 rounded-xl transition-all duration-200 cursor-pointer overflow-hidden",
           "border shadow-lg",
-          // Glassmorphism background
           "bg-gradient-to-br from-card via-card to-card/95",
           "backdrop-blur-sm",
           isSelected
@@ -128,13 +87,9 @@ export const StepNode = memo(({ data, selected: reactFlowSelected }: StepNodePro
           <NodeStatusBadge status={status} color="" />
         </div>
 
-        {/* Footer with method and arrow */}
+        {/* Footer with method and arrow - NEUTRAL styling */}
         <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-t border-border/40">
-          <span className={cn(
-            "px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide",
-            methodStyle.bg,
-            methodStyle.text
-          )}>
+          <span className="px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide bg-primary/10 text-primary">
             {method}
           </span>
           <ArrowRight className="w-4 h-4 text-muted-foreground/50" />

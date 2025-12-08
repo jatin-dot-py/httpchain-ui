@@ -6,13 +6,13 @@ import { AddInputDialog } from "../../dialogs/AddInputDialog"
 import { getStepFaviconUrl } from "@/shared/utils/favicon"
 import type { Step } from "@/types/schema"
 
-function StepItem({ 
-  step, 
-  faviconUrl, 
-  onSelect, 
-  onRemove, 
-  isSaving 
-}: { 
+function StepItem({
+  step,
+  faviconUrl,
+  onSelect,
+  onRemove,
+  isSaving
+}: {
   step: Step
   faviconUrl: string | null
   onSelect: () => void
@@ -28,9 +28,9 @@ function StepItem({
     >
       <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10">
         {faviconUrl && !faviconError ? (
-          <img 
-            src={faviconUrl} 
-            alt="" 
+          <img
+            src={faviconUrl}
+            alt=""
             className="h-4 w-4"
             onError={() => setFaviconError(true)}
           />
@@ -69,7 +69,7 @@ export function NodeList() {
   const setSelectedStepNodeId = useAppStore(s => s.setSelectedStepNodeId)
   const addStep = useAppStore(s => s.addStep)
   const isSaving = useAppStore(s => s.isSaving)
-  
+
   const [showInputDialog, setShowInputDialog] = useState(false)
   const [isAddingStep, setIsAddingStep] = useState(false)
 
@@ -141,9 +141,9 @@ export function NodeList() {
                 <Variable className="h-4 w-4 text-primary" />
               </div>
               <p className="text-xs font-medium text-muted-foreground">No variables defined</p>
-              <Button 
-                variant="link" 
-                size="sm" 
+              <Button
+                variant="link"
+                size="sm"
                 className="h-auto p-0 text-[11px] mt-1"
                 onClick={() => setShowInputDialog(true)}
               >
@@ -198,9 +198,9 @@ export function NodeList() {
                 <Boxes className="h-4 w-4 text-primary" />
               </div>
               <p className="text-xs font-medium text-muted-foreground">No steps defined</p>
-              <Button 
-                variant="link" 
-                size="sm" 
+              <Button
+                variant="link"
+                size="sm"
                 className="h-auto p-0 text-[11px] mt-1"
                 onClick={handleAddStep}
               >

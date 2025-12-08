@@ -20,7 +20,7 @@ export function Sidebar({ onBack }: SidebarProps) {
   const isSaving = useAppStore(s => s.isSaving)
   const updateChainName = useAppStore(s => s.updateChainName)
   const updateChainTags = useAppStore(s => s.updateChainTags)
-  
+
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState("")
   const [newTag, setNewTag] = useState("")
@@ -48,7 +48,7 @@ export function Sidebar({ onBack }: SidebarProps) {
   const handleAddTag = async () => {
     if (!newTag.trim() || !chainTags) return
     if (chainTags.includes(newTag.trim())) return
-    
+
     const updatedTags = [...chainTags, newTag.trim()]
     await updateChainTags(updatedTags)
     setNewTag("")
@@ -63,14 +63,14 @@ export function Sidebar({ onBack }: SidebarProps) {
 
   if (!workflow) {
     return (
-      <div className="h-full w-full bg-sidebar flex items-center justify-center">
+      <div className="h-full w-full bg-card flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   return (
-    <div className="h-full w-full bg-sidebar border-r border-sidebar-border flex flex-col">
+    <div className="h-full w-full bg-card border-r border-sidebar-border flex flex-col">
       {/* Header Section */}
       <div className="p-4 space-y-4">
         {/* Back Button & Name */}
@@ -83,7 +83,7 @@ export function Sidebar({ onBack }: SidebarProps) {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          
+
           <div className="flex-1 min-w-0">
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -150,7 +150,7 @@ export function Sidebar({ onBack }: SidebarProps) {
               <X className="h-3 w-3 ml-1 opacity-60" />
             </Badge>
           ))}
-          
+
           {isAddingTag ? (
             <div className="flex gap-1.5 items-center">
               <Input
@@ -205,7 +205,7 @@ export function Sidebar({ onBack }: SidebarProps) {
       <Separator />
 
       {/* Structure Section Header */}
-      <div className="px-4 py-3 bg-muted/30">
+      <div className="px-4 py-3 bg-card">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 rounded-md bg-primary/10">
             <Workflow className="h-4 w-4 text-primary" />

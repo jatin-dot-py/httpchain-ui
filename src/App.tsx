@@ -1,4 +1,3 @@
-import "./App.css"
 import { lazy, Suspense } from "react"
 import { useAppStore } from "./store"
 import { ChainList } from "./features/home/components/ChainList"

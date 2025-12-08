@@ -6,80 +6,81 @@ import type { ValidationResult, ForbiddenPattern } from "../types"
 
 export const LANGUAGE_ID = "python"
 export const MONACO_LANGUAGE = "python"
-export const DISPLAY_NAME = "Python"
+export const DISPLAY_NAME = "Python Script"
 export const IS_AVAILABLE = true
 
-export const IMPORT_HEADER = `# Available imports (read-only, auto-imported by backend)
-import re, json, base64, hashlib, datetime, math
-from urllib.parse import urlparse, parse_qs, urlencode, quote, unquote
-from html import escape, unescape
-from collections import defaultdict, Counter, OrderedDict
-from itertools import chain, groupby, islice
-from functools import reduce, partial
-# ─────────────────────────────────────────────────────────────────
+// This header is displayed in the UI to inform the user of the environment
+export const IMPORT_HEADER = `# ⚡ HTTPCHAIN RUNTIME ENVIRONMENT
+# The following libraries are PRE-IMPORTED and available in the global scope:
+# -------------------------------------------------------------------------
+# [Standard]:   math, json, re, random, datetime, base64, hashlib
+# [Type Utils]: str, int, float, list, dict, set, len, range, enumerate
+# [Url Utils]:  urlparse, parse_qs, urlencode (from urllib.parse)
+# [Context]:    print (logs to debug console)
+# -------------------------------------------------------------------------
+# NO IMPORTS ALLOWED. Use the libraries above directly.
 
 `
 
 export const DEFAULT_TEMPLATE = `def extract(response, variables):
     """
     Extract data from the HTTP response.
+    Supports both sync ('def') and async ('async def') signatures.
     
     Args:
-        response: HTTPResponse object with properties:
-            - json_body: Parsed JSON (dict) if response was JSON
-            - text_body: Raw text content
-            - html_body: Raw HTML content
-            - status_code: HTTP status code (int)
-            - response_headers: Headers dict
-            - response_cookies: Cookies dict
-        variables: Dict of all accumulated variables from chain
+        response: HTTPResponse object (properties: json_body, text_body, status_code, etc)
+        variables: Dict of all accumulated variables from the chain
     
     Returns:
-        Extracted value (int, str, list, dict, bool, or None)
+        The value to be stored in the 'extractor_key' variable.
     """
-    # Your extraction logic here
+    # Example: Check if JSON contains a specific user field
+    # data = response.json_body
+    # if data.get("user"):
+    #     return data["user"]["id"]
+    
     return None
 `
 
 // ============================================================================
-// Validation Patterns
+// Validation Logic Constants
 // ============================================================================
 
-const REQUIRED_SIGNATURE = /def\s+extract\s*\(\s*response\s*,\s*variables\s*\)\s*:/
+// Matches: "def extract(response, variables):" OR "async def extract(response, variables):"
+// Allows flexibility in whitespace.
+const REQUIRED_SIGNATURE = /(?:async\s+)?def\s+extract\s*\(\s*response\s*,\s*variables\s*\)\s*:/
+
 const RETURN_PATTERN = /\breturn\b/
 
-// Forbidden patterns for security validation
+// ============================================================================
+// LINTING PATTERNS (UX Guardrails)
+// These prevent users from writing code that will fail on the backend.
+// ============================================================================
+
 const FORBIDDEN_PATTERNS: ForbiddenPattern[] = [
-  // Forbidden imports
-  [/\bimport\s+os\b/, "python.forbidden_import", "'os' module is not allowed - it provides system access", "forbidden-os-import"],
-  [/\bfrom\s+os\b/, "python.forbidden_import", "'os' module is not allowed - it provides system access", "forbidden-os-import"],
-  [/\bimport\s+sys\b/, "python.forbidden_import", "'sys' module is not allowed - it provides interpreter access", "forbidden-sys-import"],
-  [/\bfrom\s+sys\b/, "python.forbidden_import", "'sys' module is not allowed - it provides interpreter access", "forbidden-sys-import"],
-  [/\bimport\s+subprocess\b/, "python.forbidden_import", "'subprocess' module is not allowed - it can execute shell commands", "forbidden-subprocess-import"],
-  [/\bfrom\s+subprocess\b/, "python.forbidden_import", "'subprocess' module is not allowed - it can execute shell commands", "forbidden-subprocess-import"],
-  [/\bimport\s+shutil\b/, "python.forbidden_import", "'shutil' module is not allowed - it provides file system operations", "forbidden-shutil-import"],
-  [/\bimport\s+socket\b/, "python.forbidden_import", "'socket' module is not allowed - use the HTTP workflow for network operations", "forbidden-socket-import"],
-  [/\bimport\s+importlib\b/, "python.forbidden_import", "'importlib' module is not allowed - dynamic imports are forbidden", "forbidden-importlib-import"],
-  [/\bfrom\s+importlib\b/, "python.forbidden_import", "'importlib' module is not allowed - dynamic imports are forbidden", "forbidden-importlib-import"],
-  [/\bimport\s+builtins\b/, "python.forbidden_import", "'builtins' module is not allowed - use standard built-in functions directly", "forbidden-builtins-import"],
-  [/\bimport\s+ctypes\b/, "python.forbidden_import", "'ctypes' module is not allowed - it provides low-level memory access", "forbidden-ctypes-import"],
-  [/\bimport\s+pickle\b/, "python.forbidden_import", "'pickle' module is not allowed - use 'json' for serialization", "forbidden-pickle-import"],
-  // Forbidden builtins
-  [/\beval\s*\(/, "python.forbidden_builtin", "'eval()' is not allowed - it can execute arbitrary code", "forbidden-eval"],
-  [/\bexec\s*\(/, "python.forbidden_builtin", "'exec()' is not allowed - it can execute arbitrary code", "forbidden-exec"],
-  [/\bcompile\s*\(/, "python.forbidden_builtin", "'compile()' is not allowed - it can compile arbitrary code", "forbidden-compile"],
-  [/\bopen\s*\(/, "python.forbidden_builtin", "'open()' is not allowed - file system access is forbidden", "forbidden-open"],
-  [/\b__import__\s*\(/, "python.forbidden_builtin", "'__import__()' is not allowed - use pre-imported modules only", "forbidden-dunder-import"],
-  [/\b__builtins__\b/, "python.forbidden_builtin", "'__builtins__' access is not allowed", "forbidden-builtins-access"],
-  [/\bglobals\s*\(\s*\)/, "python.forbidden_builtin", "'globals()' is not allowed - it exposes the global namespace", "forbidden-globals"],
-  [/\blocals\s*\(\s*\)/, "python.forbidden_builtin", "'locals()' is not allowed - it exposes the local namespace", "forbidden-locals"],
-  [/\bgetattr\s*\([^,]+,\s*['"]__/, "python.forbidden_builtin", "Accessing dunder attributes via getattr is not allowed", "forbidden-dunder-getattr"],
-  [/\bsetattr\s*\(/, "python.forbidden_builtin", "'setattr()' is not allowed - modify only local variables", "forbidden-setattr"],
-  [/\bdelattr\s*\(/, "python.forbidden_builtin", "'delattr()' is not allowed", "forbidden-delattr"],
+  // 1. IMPORTS (Backend handles dependencies)
+  [/\bimport\b/, "python.redundant_import", "Imports are not allowed. Common libraries (json, re, math, etc.) are pre-imported.", "auto-imports"],
+  [/\bfrom\b.*\bimport\b/, "python.redundant_import", "Imports are not allowed. Common libraries are pre-imported.", "auto-imports"],
+  [/\b__import__\b/, "python.redundant_import", "Dynamic imports are not allowed.", "forbidden-dunder-import"],
+
+  // 2. DANGEROUS EXECUTION (Discouraged practices)
+  [/\beval\b/, "python.unsafe_function", "Usage of 'eval' is blocked for safety.", "avoid-eval"],
+  [/\bexec\b/, "python.unsafe_function", "Usage of 'exec' is blocked for safety.", "avoid-exec"],
+  [/\bcompile\b/, "python.unsafe_function", "Usage of 'compile' is blocked.", "forbidden-compile"],
+
+  // 3. FILE SYSTEM (Not available in sandbox)
+  [/\bopen\b/, "python.io_blocked", "File I/O is not available. Use network requests or variables.", "no-file-io"],
+
+  // 4. GLOBAL SCOPE MANIPULATION (Protects the runner integrity)
+  [/\bglobals\b/, "python.scope_error", "Accessing 'globals' is not allowed.", "no-globals"],
+  [/\blocals\b/, "python.scope_error", "Accessing 'locals' is not allowed.", "no-locals"],
+
+  // 5. INTERNAL ATTRIBUTES (Basic guardrails, not exhaustive security)
+  [/\b__builtins__\b/, "python.forbidden_builtin", "Accessing '__builtins__' is not allowed.", "forbidden-builtins"],
 ]
 
 // ============================================================================
-// Validation Logic
+// Helper Functions
 // ============================================================================
 
 function findPatternLine(code: string, pattern: RegExp): number | undefined {
@@ -103,20 +104,21 @@ function checkBasicSyntax(code: string): { message: string; line: number } | nul
 
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const line = lines[lineIdx]
-    
+
     for (let i = 0; i < line.length; i++) {
       const char = line[i]
-      
+
+      // Handle Escape Characters
       if (escapeNext) {
         escapeNext = false
         continue
       }
-      
       if (char === "\\") {
         escapeNext = true
         continue
       }
 
+      // Handle Strings (Single, Double, Triple)
       if ((char === '"' || char === "'") && !inString) {
         if (line.slice(i, i + 3) === '"""' || line.slice(i, i + 3) === "'''") {
           const tripleQuote = line.slice(i, i + 3)
@@ -138,8 +140,9 @@ function checkBasicSyntax(code: string): { message: string; line: number } | nul
       }
 
       if (inString) continue
-      if (char === "#") break
+      if (char === "#") break // Comment, skip rest of line
 
+      // Stack Check
       if (pairs[char]) {
         stack.push({ char, line: lineIdx + 1 })
       } else if (closers[char]) {
@@ -159,6 +162,10 @@ function checkBasicSyntax(code: string): { message: string; line: number } | nul
   return null
 }
 
+// ============================================================================
+// Main Validation Function
+// ============================================================================
+
 export function validate(code: string): ValidationResult {
   if (!code || !code.trim()) {
     return {
@@ -169,16 +176,18 @@ export function validate(code: string): ValidationResult {
     }
   }
 
+  // 1. Check Function Signature (Sync or Async)
   if (!REQUIRED_SIGNATURE.test(code)) {
     return {
       valid: false,
       errorCode: "python.invalid_signature",
-      errorMessage: "Function must be defined as: def extract(response, variables):",
+      errorMessage: "Missing required function signature: 'def extract(response, variables):' or 'async def...'",
       helpArticleId: "invalid-signature",
       line: 1,
     }
   }
 
+  // 2. Check Forbidden Patterns (Linting)
   for (const [pattern, errorCode, message, helpArticleId] of FORBIDDEN_PATTERNS) {
     if (pattern.test(code)) {
       const line = findPatternLine(code, pattern)
@@ -192,15 +201,17 @@ export function validate(code: string): ValidationResult {
     }
   }
 
+  // 3. Ensure Return Statement Exists
   if (!RETURN_PATTERN.test(code)) {
     return {
       valid: false,
       errorCode: "python.missing_return",
-      errorMessage: "Function must have at least one return statement",
+      errorMessage: "Function must have at least one 'return' statement",
       helpArticleId: "missing-return",
     }
   }
 
+  // 4. Basic Syntax Check (Brackets/Parens)
   const syntaxError = checkBasicSyntax(code)
   if (syntaxError) {
     return {
@@ -217,4 +228,3 @@ export function validate(code: string): ValidationResult {
     errorCode: "common.valid",
   }
 }
-
