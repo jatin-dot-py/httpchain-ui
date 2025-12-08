@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { useAppStore } from "@/store"
 import { useActiveStep } from "@/features/editor/hooks/useActiveStep"
-import { SimpleJSONEditor } from "../shared/SimpleJSONEditor"
+import { KeyValueListEditor } from "../shared/KeyValueListEditor"
 
 export function ParamsEditor() {
   const step = useActiveStep()
@@ -10,29 +10,36 @@ export function ParamsEditor() {
   const updateStep = useAppStore(s => s.updateStep)
 
   const params = step?.request.request_params ?? null
+  const paramsBuffer = step?.request._params_buffer ?? null
   const availableVariables = useMemo(() => {
     return step?.depends_on_variables || []
   }, [step?.depends_on_variables])
 
   if (!step) return null
 
-  const handleUpdate = (newParams: Record<string, any> | null) => {
+  const handleUpdate = (
+    newParams: Record<string, string> | null,
+    newBuffer: Record<string, string> | null
+  ) => {
     if (!selectedStepNodeId) return
     updateStep(selectedStepNodeId, {
       request: {
         ...step.request,
-        request_params: newParams as Record<string, string> | null
+        request_params: newParams,
+        _params_buffer: newBuffer
       }
     })
   }
 
   return (
-    <SimpleJSONEditor
+    <KeyValueListEditor
       data={params}
+      buffer={paramsBuffer}
       onUpdate={handleUpdate}
       disabled={isSaving}
       availableVariables={availableVariables}
+      keyPlaceholder="Parameter name"
+      valuePlaceholder="Parameter value"
     />
   )
 }
-

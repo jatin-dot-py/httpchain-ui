@@ -2,49 +2,50 @@ import { useState, useEffect } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SimpleJSONEditor } from "../shared/SimpleJSONEditor"
 
-type ValueType = "true" | "false" | "null" | "string" | "numeric"
+type ValueType = "true" | "false" | "null" | "string" | "numeric" | "object"
 
 interface ValueSelectorProps {
   value: any
   onChange: (value: any) => void
   disabled?: boolean
-  operator?: string // Reserved for future use
+  operator?: string
 }
 
 export function ValueSelector({ value, onChange, disabled }: ValueSelectorProps) {
-  // Determine current value type
   const getValueType = (val: any): ValueType => {
     if (val === true || val === "true") return "true"
     if (val === false || val === "false") return "false"
     if (val === null || val === "null" || val === undefined) return "null"
     if (typeof val === "number") return "numeric"
-    // Check if string is numeric (but not empty string)
     if (typeof val === "string" && val !== "" && !isNaN(Number(val)) && !isNaN(parseFloat(val))) {
       return "numeric"
     }
-    // Empty string or any other string defaults to "string" type
+    if (typeof val === "object" && val !== null) return "object"
     return "string"
   }
 
   const [valueType, setValueType] = useState<ValueType>(getValueType(value))
   const [stringValue, setStringValue] = useState<string>(valueType === "string" ? (value !== undefined && value !== null ? String(value) : "") : "")
   const [numericValue, setNumericValue] = useState<string>(valueType === "numeric" ? String(value || "") : "")
+  const [objectValue, setObjectValue] = useState<Record<string, any> | null>(valueType === "object" ? value : null)
 
   useEffect(() => {
     const currentType = getValueType(value)
     setValueType(currentType)
     if (currentType === "string") {
-      // Preserve empty strings - don't convert undefined/null to empty string if value is already empty string
       setStringValue(value !== undefined && value !== null ? String(value) : "")
     } else if (currentType === "numeric") {
       setNumericValue(String(value || ""))
+    } else if (currentType === "object") {
+      setObjectValue(value)
     }
   }, [value])
 
   const handleTypeChange = (newType: ValueType) => {
     setValueType(newType)
-    
+
     switch (newType) {
       case "true":
         onChange(true)
@@ -66,6 +67,9 @@ export function ValueSelector({ value, onChange, disabled }: ValueSelectorProps)
           onChange(isNaN(num) ? 0 : num)
         }
         break
+      case "object":
+        onChange(objectValue || {})
+        break
     }
   }
 
@@ -78,6 +82,11 @@ export function ValueSelector({ value, onChange, disabled }: ValueSelectorProps)
     setNumericValue(newValue)
     const num = newValue ? Number(newValue) : 0
     onChange(isNaN(num) ? 0 : num)
+  }
+
+  const handleObjectChange = (newValue: Record<string, any> | null) => {
+    setObjectValue(newValue)
+    onChange(newValue || {})
   }
 
   return (
@@ -93,6 +102,7 @@ export function ValueSelector({ value, onChange, disabled }: ValueSelectorProps)
           <SelectItem value="null">Null</SelectItem>
           <SelectItem value="string">String</SelectItem>
           <SelectItem value="numeric">Numeric</SelectItem>
+          <SelectItem value="object">Object (JSON)</SelectItem>
         </SelectContent>
       </Select>
 
@@ -116,7 +126,15 @@ export function ValueSelector({ value, onChange, disabled }: ValueSelectorProps)
           disabled={disabled}
         />
       )}
+
+      {valueType === "object" && (
+        <SimpleJSONEditor
+          data={objectValue}
+          onUpdate={handleObjectChange}
+          disabled={disabled}
+          emptyMessage="Click to add JSON object"
+        />
+      )}
     </div>
   )
 }
-

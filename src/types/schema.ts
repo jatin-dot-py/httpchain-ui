@@ -103,7 +103,6 @@ export interface Extractor {
   function_extractor?: FunctionExtractor
 
   _extraction_status?: EvaluationStatus
-
 }
 
 export interface HTTPRequest {
@@ -124,6 +123,11 @@ export interface HTTPRequest {
   request_retry_delay?: number | null
   randomize_headers?: boolean | null
   extractors?: Extractor[] | null
+
+  // Private buffer fields for disabled items (UI-only, not sent in request)
+  _headers_buffer?: Record<string, string> | null
+  _cookies_buffer?: Record<string, string> | null
+  _params_buffer?: Record<string, string> | null
 
   _response?: HTTPResponse | null
 }
@@ -187,6 +191,9 @@ export function createEmptyStep(): Step {
       request_retry_delay: 1000,
       randomize_headers: false,
       extractors: null,
+      _headers_buffer: null,
+      _cookies_buffer: null,
+      _params_buffer: null,
       _response: null,
     },
     depends_on_variables: null,

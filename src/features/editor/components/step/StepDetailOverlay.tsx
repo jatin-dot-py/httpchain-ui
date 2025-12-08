@@ -59,7 +59,7 @@ export function StepDetailOverlay({ open, onClose }: StepDetailOverlayProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-all duration-200">
-      <div className="fixed inset-y-4 right-4 w-full max-w-5xl z-50 bg-card border border-border rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-right-1/2 duration-300 overflow-hidden">
+      <div className="fixed inset-y-4 right-4 w-full max-w-6xl z-50 bg-card border border-border rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-right-1/2 duration-300 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/40">
           <div className="flex items-center gap-4">

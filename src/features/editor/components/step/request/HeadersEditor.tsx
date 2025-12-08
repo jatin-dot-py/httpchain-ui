@@ -1,8 +1,7 @@
 import { useMemo } from "react"
 import { useAppStore } from "@/store"
 import { useActiveStep } from "@/features/editor/hooks/useActiveStep"
-import { SimpleJSONEditor } from "../shared/SimpleJSONEditor"
-import { FileText } from "lucide-react"
+import { KeyValueListEditor } from "../shared/KeyValueListEditor"
 
 export function HeadersEditor() {
   const step = useActiveStep()
@@ -11,40 +10,36 @@ export function HeadersEditor() {
   const updateStep = useAppStore(s => s.updateStep)
 
   const headers = step?.request.request_headers ?? null
+  const headersBuffer = step?.request._headers_buffer ?? null
   const availableVariables = useMemo(() => {
     return step?.depends_on_variables || []
   }, [step?.depends_on_variables])
 
   if (!step) return null
 
-  const handleUpdate = (newHeaders: Record<string, any> | null) => {
+  const handleUpdate = (
+    newHeaders: Record<string, string> | null,
+    newBuffer: Record<string, string> | null
+  ) => {
     if (!selectedStepNodeId) return
     updateStep(selectedStepNodeId, {
       request: {
         ...step.request,
-        request_headers: newHeaders as Record<string, string> | null
+        request_headers: newHeaders,
+        _headers_buffer: newBuffer
       }
     })
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b">
-        <FileText className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold">Request Headers</h3>
-      </div>
-      
-      <div className="pl-2">
-        <div className="text-xs text-muted-foreground mb-4">
-          Add custom headers to your request (e.g. Content-Type, Authorization).
-        </div>
-        <SimpleJSONEditor
-          data={headers}
-          onUpdate={handleUpdate}
-          disabled={isSaving}
-          availableVariables={availableVariables}
-        />
-      </div>
-    </div>
+    <KeyValueListEditor
+      data={headers}
+      buffer={headersBuffer}
+      onUpdate={handleUpdate}
+      disabled={isSaving}
+      availableVariables={availableVariables}
+      keyPlaceholder="Header name"
+      valuePlaceholder="Header value"
+    />
   )
 }
