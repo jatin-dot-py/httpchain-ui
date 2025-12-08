@@ -2,7 +2,7 @@ import { memo } from "react"
 import { Handle, Position } from "@xyflow/react"
 import { Braces, Code, FileJson, Regex, Terminal } from "lucide-react"
 import { NodeStatusBadge, type NodeStatus } from "./NodeStatusBadge"
-import type { Extractor, ExtractorType } from "@/types/schema"
+import type { Extractor } from "@/types/schema"
 import { ExtractorType as ExtractorTypeEnum } from "@/types/schema"
 import { cn } from "@/lib/utils"
 
